@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>咖啡机拆解工作台</title>
+<meta name="description" content="可拆解、可透视、可操作的意式咖啡机三维模拟器：La Marzocco Linea Micra 与 Linea Mini R。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;600&display=swap">
+<style>
+/* Layout: a bench — machine drawers down the left, the live simulator on the bench top, the operating notes under it. */
+:root{
+  color-scheme: light;
+  --ground:#e4e6e9;
+  --panel:#f6f7f8;
+  --ink:#16191d;
+  --ink-2:#5b636c;
+  --rule:#cfd4d9;
+  --accent:#d2381c;
+  --f-display:"Barlow Condensed","Noto Sans SC",system-ui,sans-serif;
+  --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-data:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font:14px/1.55 var(--f-body)}
+.wrap{display:grid;grid-template-columns:300px 1fr;grid-template-rows:auto 1fr;height:100%;gap:0}
+header{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:12px max(20px,env(safe-area-inset-right,0px)) 12px max(20px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--rule);background:var(--panel)}
+header h1{font:700 26px/1 var(--f-display);letter-spacing:.02em;margin:0}
+header .sub{color:var(--ink-2);font-size:12.5px}
+header .grow{flex:1}
+header a{color:var(--ink);font-size:12.5px;text-decoration:none;border:1px solid var(--rule);padding:5px 10px;background:#fff}
+header a:hover{border-color:var(--ink-2)}
+aside{border-right:1px solid var(--rule);background:var(--panel);overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.eyebrow{font:600 10.5px/1 var(--f-data);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+.machine{display:block;text-align:left;width:100%;font:inherit;color:inherit;background:#fff;border:1px solid var(--rule);padding:0;cursor:pointer}
+.machine:hover{border-color:var(--ink-2)}
+.machine:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.machine.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.machine img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;background:var(--ground);max-width:100%}
+.machine .body{padding:10px 12px 12px}
+.machine h2{font:700 22px/1.05 var(--f-display);margin:0 0 6px}
+.machine dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:0;font-size:12px}
+.machine dt{color:var(--ink-2)}
+.machine dd{margin:0;text-align:right;font-family:var(--f-data);font-size:11.5px;font-variant-numeric:tabular-nums}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tags span{font-size:11px;border:1px solid var(--rule);padding:1px 6px;color:var(--ink-2)}
+.note{font-size:11.5px;color:var(--ink-2);line-height:1.6}
+main{display:grid;grid-template-rows:auto 1fr auto;min-width:0;min-height:0}
+.bar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--rule);background:var(--panel);flex-wrap:wrap}
+.bar b{font:700 18px/1 var(--f-display);margin-right:auto}
+.bar button,.bar a{font:inherit;font-size:12.5px;color:var(--ink);background:#fff;border:1px solid var(--rule);padding:5px 10px;cursor:pointer;text-decoration:none}
+.bar button:hover,.bar a:hover{border-color:var(--ink-2)}
+.stage{position:relative;min-height:0;background:#e8e9ec}
+.stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.tips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid var(--rule);background:var(--panel)}
+.tip{padding:10px 14px;border-right:1px solid var(--rule);min-width:0}
+.tip:last-child{border-right:0}
+.tip b{display:block;font-size:12.5px;margin-bottom:2px}
+.tip span{font-size:12px;color:var(--ink-2)}
+@media (max-width:900px){
+  body{overflow:auto}
+  .wrap{display:flex;flex-direction:column;height:auto}
+  aside{border-right:0;border-bottom:1px solid var(--rule);flex-direction:row;overflow-x:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  aside .eyebrow,aside .note{display:none}
+  .machine{flex:0 0 240px}
+  .stage{height:78vh}
+  .tips{grid-template-columns:1fr 1fr}
+  .tip:nth-child(2){border-right:0}
+  .tip:nth-child(-n+2){border-bottom:1px solid var(--rule)}
+  header{flex-wrap:wrap;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>咖啡机拆解工作台</h1>
+    <span class="sub">真实尺寸 · 一个时间轴驱动全部仪表 · 可拆解、可透视、可操作</span>
+    <span class="grow"></span>
+    <a href="https://github.com/tgchtggn29-bit/coffee-teardown-studio" target="_blank" rel="noopener">GitHub</a>
+  </header>
+
+  <aside aria-label="机型">
+    <div class="eyebrow">机型</div>
+    <button class="machine" type="button" data-sim="linea-micra">
+      <img src="docs/screenshots/linea-micra-thumb.png" alt="Linea Micra 外观">
+      <div class="body">
+        <h2>Linea Micra</h2>
+        <dl>
+          <dt>尺寸</dt><dd>29 × 39.5 × 33.5 cm</dd>
+          <dt>锅炉</dt><dd>0.23 L + 1.6 L</dd>
+          <dt>水泵</dt><dd>旋转叶片 85 L/h</dd>
+        </dl>
+        <div class="tags"><span>X 光透视</span><span>拨杆萃取</span><span>预浸</span><span>旋钮可操作</span><span>8 款外观</span></div>
+      </div>
+    </button>
+    <button class="machine" type="button" data-sim="linea-mini-r">
+      <img src="docs/screenshots/linea-mini-r-thumb.png" alt="Linea Mini R 外观">
+      <div class="body">
+        <h2>Linea Mini R</h2>
+        <dl>
+          <dt>尺寸</dt><dd>36 × 54 × 38 cm</dd>
+          <dt>锅炉</dt><dd>0.17 L + 3.0 L</dd>
+          <dt>水泵</dt><dd>旋转叶片 70 L/h</dd>
+        </dl>
+        <div class="tags"><span>拆解</span><span>透视外壳</span><span>部件单独查看</span></div>
+      </div>
+    </button>
+    <p class="note">尺寸、容量、功率和零件分组取自 La Marzocco 官方零件目录与产品资料；萃取曲线为示意。本项目与 La Marzocco 无关联。</p>
+  </aside>
+
+  <main>
+    <div class="bar">
+      <b id="simName">Linea Micra</b>
+      <button type="button" id="btn-reload">重新开始</button>
+      <button type="button" id="btn-full">全屏演示</button>
+      <a id="btn-open" href="sims/linea-micra.html" target="_blank" rel="noopener">新窗口打开</a>
+    </div>
+    <div class="stage" id="stage"><iframe id="sim" title="咖啡机三维模拟器" src="sims/linea-micra.html" allow="fullscreen"></iframe></div>
+    <div class="tips">
+      <div class="tip"><b>自动巡览</b><span>不操作时会自己演示，点任意处接管，25 秒无操作后继续。</span></div>
+      <div class="tip"><b>拖动 · 滚轮</b><span>拖动旋转视角，滚轮缩放，"部件"按钮单独查看一个系统。</span></div>
+      <div class="tip"><b>拨杆与旋钮</b><span>点模型上的拨杆开始或停止萃取；旋钮顺时针拧开热水和蒸汽。</span></div>
+      <div class="tip"><b>拆解 · X 光</b><span>"拆解"按顺序分离零件，"X 光透视"看锅炉加热和水路。</span></div>
+    </div>
+  </main>
+</div>
+<script>
+const SIMS = {'linea-micra': 'Linea Micra', 'linea-mini-r': 'Linea Mini R'};
+const frame = document.getElementById('sim'), nameEl = document.getElementById('simName'), openEl = document.getElementById('btn-open');
+function show(id) {
+  if (!SIMS[id]) id = 'linea-micra';
+  const url = 'sims/' + id + '.html';
+  if (!frame.src.endsWith(url)) frame.src = url;
+  nameEl.textContent = SIMS[id];
+  openEl.href = url;
+  document.querySelectorAll('[data-sim]').forEach(b => b.classList.toggle('on', b.dataset.sim === id));
+  if (location.hash.slice(1) !== id) history.replaceState(null, '', '#' + id);
+}
+document.querySelectorAll('[data-sim]').forEach(b => b.addEventListener('click', () => show(b.dataset.sim)));
+document.getElementById('btn-reload').addEventListener('click', () => { frame.src = frame.src; });
+document.getElementById('btn-full').addEventListener('click', () => {
+  const el = document.getElementById('stage');
+  (el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(() => window.open(frame.src, '_blank'));
+});
+addEventListener('hashchange', () => show(location.hash.slice(1)));
+show(location.hash.slice(1));
+</script>
+</body>
+</html>

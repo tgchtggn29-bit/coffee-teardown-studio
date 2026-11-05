@@ -1,0 +1,1292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Linea Micra 拆解台</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;600&display=swap">
+<style>
+*{box-sizing:border-box}body{margin:0}
+/* Layout: the machine owns the stage; instrument cards float at the corners like a bench console. Single light studio look by choice. */
+:root{
+  color-scheme: light;
+  --ground:#e8e9ec;
+  --card:#f7f8f9;
+  --ink:#16191d;
+  --ink-2:#5b636c;
+  --rule:#d3d7dc;
+  --accent:#d2381c;
+  --f-display:"Barlow Condensed","Noto Sans SC",system-ui,sans-serif;
+  --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-data:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+html,body{height:100%}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-body);overflow:hidden}
+#app{position:relative;height:100%}
+#view{position:absolute;inset:0;overflow:hidden}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#gl:active{cursor:grabbing}
+#leaders{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#labels{position:absolute;inset:0;pointer-events:none}
+.lab{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;background:var(--card);border:1px solid var(--rule);padding:5px 9px 6px;font-size:12px;line-height:1.35}
+.lab b{display:block;font-weight:600;font-size:13px}
+.lab span{font-family:var(--f-data);font-size:11px;color:var(--ink-2)}
+.card{position:absolute;background:color-mix(in srgb,var(--card) 92%,transparent);border:1px solid var(--rule);backdrop-filter:blur(6px)}
+.idcard{left:max(20px,env(safe-area-inset-left,0px));top:20px;width:272px;padding:16px 18px 14px}
+.eyebrow{font-family:var(--f-data);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+h1{font-family:var(--f-display);font-weight:700;font-size:44px;line-height:.95;letter-spacing:.01em;margin:6px 0 10px;text-wrap:balance}
+.spec{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:12.5px}
+.spec dt{color:var(--ink-2)}
+.spec dd{margin:0;font-family:var(--f-data);font-size:12px;font-variant-numeric:tabular-nums;text-align:right}
+.src{margin-top:10px;font-size:11px;color:var(--ink-2);line-height:1.5}
+.skin-now{margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);display:flex;align-items:center;gap:8px;font-size:12.5px}
+.skin-now i{width:14px;height:14px;border:1px solid var(--ink-2);display:inline-block}
+.gauges{right:max(20px,env(safe-area-inset-right,0px));top:20px;width:292px;padding:14px 16px 12px}
+.phase{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:10px}
+.phase i{width:8px;height:8px;border-radius:50%;background:var(--ink-2)}
+.phase.on i{background:var(--accent);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.dials{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dial{text-align:center}
+.dial canvas{width:122px;height:122px;display:block;margin:0 auto}
+.dial div{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.rows{margin-top:10px;border-top:1px solid var(--rule)}
+.row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--rule);font-size:12.5px}
+.row span{color:var(--ink-2)}
+.row b{font-family:var(--f-data);font-weight:600;font-size:13px;font-variant-numeric:tabular-nums}
+.row b.hot{color:var(--accent)}
+.brew{margin-top:12px;display:grid;gap:8px}
+.brew #btn-paddle{width:100%;padding:8px 10px;font-weight:600}
+.pi{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
+.pi span{margin-right:auto}
+.dock{left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(1010px,calc(100% - 40px));padding:12px 16px 12px;display:grid;grid-template-columns:320px 1fr;gap:8px 22px}
+.chartbox{grid-row:span 4}
+.chartbox canvas{width:100%;height:140px;display:block}
+.chartcap{display:flex;gap:14px;font-size:11px;color:var(--ink-2);margin-bottom:4px}
+.chartcap em{font-style:normal;display:inline-flex;align-items:center;gap:5px}
+.chartcap em::before{content:"";width:12px;height:2px;background:currentColor}
+.chartcap .p{color:var(--accent)}.chartcap .y{color:var(--ink)}
+.btns{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btns .lbl{font-family:var(--f-data);font-size:10px;letter-spacing:.12em;color:var(--ink-2);width:36px}
+button{font:inherit;font-size:12.5px;color:var(--ink);background:var(--card);border:1px solid var(--rule);padding:5px 10px;cursor:pointer;line-height:1.3}
+button:hover{border-color:var(--ink-2)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.sw{display:inline-flex;align-items:center;gap:6px;padding:4px 9px 4px 5px}
+.sw i{width:16px;height:16px;border:1px solid rgba(0,0,0,.25);display:inline-block;flex:none}
+.sw.on{background:var(--card);color:var(--ink);border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.scrub{display:flex;align-items:center;gap:10px}
+.scrub input{flex:1;accent-color:var(--accent);min-width:0}
+.scrub output{font-family:var(--f-data);font-size:12px;width:52px;text-align:right;font-variant-numeric:tabular-nums}
+#tourchip{position:absolute;left:50%;top:20px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 12px;border:1px solid var(--rule);background:var(--card);white-space:nowrap}
+#tourchip i{width:7px;height:7px;border-radius:50%;background:var(--ink-2)}
+#tourchip.on i{background:var(--accent);animation:blink 1.2s steps(2) infinite}
+#cursor{position:fixed;left:0;top:0;width:22px;height:22px;pointer-events:none;z-index:20;opacity:0;transition:opacity .3s}
+#cursor svg{width:22px;height:22px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+#ring{position:fixed;width:34px;height:34px;margin:-17px 0 0 -17px;border:2px solid var(--accent);border-radius:50%;pointer-events:none;z-index:19;opacity:0}
+#fail{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:24px;font-size:14px;color:var(--ink-2)}
+@media (min-width:901px) and (max-width:1440px){
+  .idcard{width:246px;padding:12px 14px}
+  .spec dd{white-space:nowrap}
+  h1{font-size:32px;margin:4px 0 8px}
+  .spec{font-size:11.5px;gap:3px 10px}
+  .spec dd{font-size:11px}
+  .src{display:none}
+  .gauges{width:252px;padding:10px 12px}
+  .dial canvas{width:100px;height:100px}
+  .row{padding:4px 0;font-size:12px}
+  .dock{grid-template-columns:250px 1fr;padding:10px 12px;gap:6px 14px}
+  .chartbox canvas{height:118px}
+  button{font-size:12px;padding:4px 8px}
+}
+@media (max-width:900px){
+  body{overflow:auto}
+  #app{height:auto;display:flex;flex-direction:column;gap:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 24px}
+  #view{position:relative;inset:auto;height:58vh;min-height:320px;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)))}
+  .card{position:static;width:auto;transform:none;backdrop-filter:none}
+  .idcard,.gauges{width:auto}
+  .dock{display:flex;flex-direction:column;width:auto;order:1}
+  .gauges{order:2}
+  .idcard{order:3}
+  #tourchip{top:10px}
+  h1{font-size:38px}
+  .lab{font-size:11px;padding:4px 7px}
+  .lab span{display:none}
+}
+@media (prefers-reduced-motion:reduce){.phase.on i,#tourchip.on i{animation:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="view">
+    <canvas id="gl" aria-label="Linea Micra 三维模型，可拖动旋转、滚轮缩放"></canvas>
+    <svg id="leaders"></svg>
+    <div id="labels"></div>
+    <button id="tourchip" type="button"><i></i><span>自动巡览中 · 点任意处接管</span></button>
+    <div id="fail">这台设备的浏览器没能启动 WebGL，三维模型无法显示。换用电脑上的 Chrome、Edge 或 Safari 打开即可。</div>
+  </div>
+
+  <header class="card idcard">
+    <div class="eyebrow">La Marzocco · 家用双锅炉意式咖啡机</div>
+    <h1>Linea Micra</h1>
+    <dl class="spec">
+      <dt>外形 宽×深×高</dt><dd>29 × 39.5 × 33.5 cm</dd>
+      <dt>含手柄深度</dt><dd>47 cm</dd>
+      <dt>整机重量</dt><dd>19 kg</dd>
+      <dt>咖啡锅炉</dt><dd>0.23 L · 500 W</dd>
+      <dt>蒸汽锅炉</dt><dd>1.6 L · 1300 W · 立式</dd>
+      <dt>水泵</dt><dd>旋转叶片 85 L/h</dd>
+      <dt>水箱</dt><dd>1.5 L · 底座内</dd>
+      <dt>压力表</dt><dd>0–18 / 0–3 bar</dd>
+    </dl>
+    <div class="skin-now"><i id="skinDot"></i><span>当前外观：<b id="skinName">不锈钢</b></span></div>
+    <p class="src">结构与参数取自 La Marzocco 官方 Linea Micra 零件目录 V1.0（220–240 V 版本）；萃取曲线和蒸汽压力为示意。</p>
+  </header>
+
+  <aside class="card gauges">
+    <div class="phase" id="phase"><i></i><span id="phasetxt">待机</span></div>
+    <div class="dials">
+      <div class="dial"><canvas id="dialBrew" width="244" height="244"></canvas><div>冲煮压力 bar</div></div>
+      <div class="dial"><canvas id="dialSteam" width="244" height="244"></canvas><div>蒸汽锅炉 bar</div></div>
+    </div>
+    <div class="rows">
+      <div class="row"><span>咖啡锅炉水温</span><b id="vTemp">93.5 °C</b></div>
+      <div class="row"><span>萃取时间</span><b id="vTime">0.0 s</b></div>
+      <div class="row"><span>出液 / 粉量 17 g</span><b id="vYield">0.0 g</b></div>
+      <div class="row"><span>进水流量</span><b id="vFlow">0.0 ml/s</b></div>
+      <div class="row"><span>加热中</span><b id="vHeat">—</b></div>
+      <div class="row"><span>水箱余量</span><b id="vTank">1400 ml</b></div>
+    </div>
+    <div class="brew">
+      <button type="button" id="btn-paddle">拨杆 · 开始萃取</button>
+      <div class="pi"><span>旋钮</span>
+        <button type="button" id="btn-hot">热水 · 关</button>
+        <button type="button" id="btn-steam">蒸汽 · 关</button>
+      </div>
+      <div class="pi"><span>预浸</span>
+        <button type="button" data-pi="0" class="on">关</button>
+        <button type="button" data-pi="2">2 s</button>
+        <button type="button" data-pi="4">4 s</button>
+      </div>
+    </div>
+  </aside>
+
+  <section class="card dock" aria-label="控制台">
+    <div class="chartbox">
+      <div class="chartcap"><em class="p">冲煮压力 0–10 bar</em><em class="y">出液量 0–40 g</em></div>
+      <canvas id="chart" width="640" height="280"></canvas>
+    </div>
+    <div class="btns" id="skins">
+      <span class="lbl">外观</span>
+    </div>
+    <div class="btns" id="subs">
+      <span class="lbl">部件</span>
+      <button type="button" data-sub="all" class="on">整机</button>
+      <button type="button" data-sub="group">冲煮头</button>
+      <button type="button" data-sub="steam">蒸汽锅炉</button>
+      <button type="button" data-sub="paddle">拨杆</button>
+      <button type="button" data-sub="pump">水泵</button>
+      <button type="button" data-sub="wand">蒸汽热水</button>
+      <button type="button" data-sub="water">水箱接水</button>
+      <button type="button" data-sub="elec">电控</button>
+      <button type="button" data-sub="pf">手柄</button>
+    </div>
+    <div class="btns">
+      <span class="lbl">视图</span>
+      <button type="button" id="btn-explode">拆解</button>
+      <button type="button" id="btn-xray">X 光透视</button>
+      <button type="button" data-view="hero" class="on">主视</button>
+      <button type="button" data-view="front">正面</button>
+      <button type="button" data-view="side">侧面</button>
+      <button type="button" data-view="top">俯视</button>
+      <button type="button" id="btn-pause">暂停</button>
+    </div>
+    <div class="scrub">
+      <label for="scrub" class="eyebrow">循环</label>
+      <input id="scrub" type="range" min="0" max="44" step="0.05" value="0">
+      <output id="scrubout">0.0 s</output>
+    </div>
+  </section>
+</div>
+<div id="cursor"><svg viewBox="0 0 24 24"><path d="M3 2 L3 19 L8 14.5 L11.5 22 L14.5 20.6 L11 13.4 L17.5 13.4 Z" fill="#16191d" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+<div id="ring"></div>
+
+<script type="importmap">
+{"imports":{
+  "three":"../vendor/three/three.module.min.js",
+  "three/addons/":"../vendor/three/addons/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+/* ================================================================ the machine model
+   One input: t, seconds into a 44 s cycle. Every pose, gauge, chart and particle reads model(t).
+   Units: mm, bar, °C, g, ml. Outer size 290 × 472 × 338 mm, coffee boiler 0.25 L, steam boiler 1.6 L. */
+const CYCLE = 44, T_ON = 4, T_OFF = 32, ST_ON = 34, ST_OFF = 38, FILL_ON = 38.5, FILL_OFF = 41.5;
+const STEAM_NOM = 1.5;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const sm = (a, b, x) => { const u = clamp((x - a) / (b - a), 0, 1); return u * u * (3 - 2 * u); };
+const ease = (u) => u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+const lerp = (a, b, k) => a + (b - a) * k;
+
+let PI = 0;                                         // low-pressure pre-infusion, seconds (set in the La Marzocco app)
+const pressureAt = (t) => {
+  if (t < T_ON) return 0;
+  if (t < T_OFF) {
+    const e = t - T_ON;
+    const base = PI > 0 ? (e < PI ? 2.5 * sm(0, 1.2, e) : 2.5 + 6.5 * sm(PI, PI + 3, e)) : 9 * sm(0, 4, e);
+    return base + 0.06 * Math.sin(e * 2.3) * sm(PI + 4, PI + 6, e);
+  }
+  return 9 * Math.exp(-(t - T_OFF) / 0.5);
+};
+const onset = () => T_ON + 6 + PI * 0.6;
+const yieldRate = (t) => {
+  if (t < onset()) return 0;
+  if (t < T_OFF) return 1.6 * sm(onset(), onset() + 3, t);
+  return 1.6 * Math.exp(-(t - T_OFF) / 0.7);
+};
+const inflow = (t) => {
+  if (t >= T_ON && t < T_OFF) {
+    const e = t - T_ON;
+    if (PI > 0 && e < PI + 1) return 5 * (1 - sm(0, 1.5, e)) + 0.9;
+    return 6 * (1 - sm(PI, PI + 4, e)) * (PI > 0 ? 0.4 : 1) + 1.9 * sm(PI + 2.5, PI + 6, e);
+  }
+  if (t >= FILL_ON && t < FILL_OFF) return 10;
+  return 0;
+};
+const pumpOn = (t) => (t >= T_ON && t < T_OFF) || (t >= FILL_ON && t < FILL_OFF);
+const steamOpen = (t) => t >= ST_ON && t < ST_OFF;
+const coffeeTemp = (t) => 93.5 - 0.7 * sm(T_ON + 1, T_ON + 5, t) * (1 - sm(T_ON + 9, T_OFF + 2, t));
+const steamBar = (t) => {
+  let p = STEAM_NOM - 0.04 * sm(T_ON + 2, T_ON + 8, t) * (1 - sm(T_ON + 14, T_OFF + 1, t));
+  if (t >= ST_ON && t < ST_OFF) p = STEAM_NOM - 0.4 * sm(ST_ON, ST_OFF, t);
+  else if (t >= ST_OFF) p = STEAM_NOM - 0.4 + 0.4 * sm(ST_OFF + 0.3, CYCLE, t) - 0.05 * sm(FILL_ON, FILL_OFF, t) * (1 - sm(FILL_OFF, CYCLE, t));
+  return p;
+};
+const DT = 0.005, N = Math.ceil(CYCLE / DT) + 1;
+const tabYield = new Float32Array(N), tabRotor = new Float32Array(N), tabFeed = new Float32Array(N), tabBrew = new Float32Array(N), tabSteam = new Float32Array(N), tabDrain = new Float32Array(N);
+function buildTables() {
+  for (let i = 1; i < N; i++) {
+    const t = (i - 0.5) * DT;
+    tabYield[i] = tabYield[i - 1] + yieldRate(t) * DT;
+    tabRotor[i] = tabRotor[i - 1] + (pumpOn(t) ? 2 * Math.PI * 24 : 0) * DT;
+    tabFeed[i] = tabFeed[i - 1] + inflow(t) * 22 * DT;
+    tabBrew[i] = tabBrew[i - 1] + (t >= T_ON && t < T_OFF ? inflow(t) * 22 : 0) * DT;
+    tabSteam[i] = tabSteam[i - 1] + (steamOpen(t) ? 160 : 0) * DT;
+    tabDrain[i] = tabDrain[i - 1] + (t >= T_OFF && t < T_OFF + 1.4 ? 140 : 0) * DT;
+  }
+}
+buildTables();
+const tab = (arr, t) => { const f = clamp(t / DT, 0, N - 1), i = Math.floor(f), k = f - i; return arr[i] + ((arr[Math.min(i + 1, N - 1)] - arr[i]) * k); };
+
+function model(t) {
+  const p = pressureAt(t), sb = steamBar(t);
+  const shotT = t < T_ON ? 0 : Math.min(t, T_OFF) - T_ON;
+  let phase = '待机 · 双 PID 保温';
+  if (t >= T_ON && t < T_ON + PI) phase = '拨杆打开 · 低压预浸';
+  else if (t >= T_ON + PI && t < T_ON + PI + 4) phase = '压力爬升';
+  else if (t >= T_ON + PI + 4 && t < T_OFF) phase = '9 bar 萃取中';
+  else if (t >= T_OFF && t < T_OFF + 1.4) phase = '关阀 · 三通阀泄压';
+  else if (t >= ST_ON && t < ST_OFF) phase = '蒸汽棒出汽';
+  else if (t >= FILL_ON && t < FILL_OFF) phase = '自动补水 · 蒸汽锅炉回压';
+  return {
+    t, p, sb, shotT, phase,
+    active: (t >= T_ON && t < T_OFF) || steamOpen(t) || pumpOn(t),
+    yield: tab(tabYield, t), yRate: yieldRate(t), flow: inflow(t),
+    temp: coffeeTemp(t), paddle: sm(T_ON - 0.4, T_ON, t) * (1 - sm(T_OFF - 0.4, T_OFF, t)),
+    steamHeat: sb < STEAM_NOM - 0.01, coffeeHeat: coffeeTemp(t) < 93.4,
+    rotor: tab(tabRotor, t), feed: tab(tabFeed, t), brew: tab(tabBrew, t), steam: tab(tabSteam, t), drain: tab(tabDrain, t),
+    steamK: sm(ST_ON, ST_ON + 0.4, t) * (1 - sm(ST_OFF - 0.3, ST_OFF, t)),
+    tank: 1450 - 92 * sm(T_ON, T_OFF + 1, t) - 120 * sm(FILL_ON, FILL_OFF, t),
+    steamLevel: 215 - 8 * sm(ST_ON, ST_OFF, t) * (1 - sm(FILL_ON, FILL_OFF, t)),
+  };
+}
+
+/* ================================================================ renderer and studio */
+const view = document.getElementById('view');
+const canvas = document.getElementById('gl');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas, antialias: true, powerPreference: 'high-performance'}); }
+catch (e) { document.getElementById('fail').style.display = 'grid'; throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.localClippingEnabled = true;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xe8e9ec);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(30, 1, 5, 20000);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 300; controls.maxDistance = 3000;
+controls.maxPolarAngle = Math.PI * 0.49;
+scene.add(new THREE.HemisphereLight(0xffffff, 0xcfd3d8, 0.6));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+sun.position.set(700, 1400, 900);
+sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, {left: -800, right: 800, top: 800, bottom: -800, near: 100, far: 4000});
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 1.2;
+scene.add(sun);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(8000, 8000), new THREE.ShadowMaterial({opacity: 0.16, polygonOffset: true, polygonOffsetFactor: -1}));
+floor.rotation.x = -Math.PI / 2; floor.position.y = -0.5; floor.receiveShadow = true; scene.add(floor);
+
+/* ================================================================ materials */
+const std = (c, m, r, extra = {}) => new THREE.MeshStandardMaterial({color: c, metalness: m, roughness: r, envMapIntensity: 0.55, ...extra});
+const MAT = {
+  steel: std(0xc8ccd1, 0.9, 0.36),
+  steelDark: std(0x8d9298, 0.85, 0.45),
+  paint: std(0xc8ccd1, 0.9, 0.36),        // skinned body
+  trayPaint: std(0xc8ccd1, 0.9, 0.36),    // skinned drip tray front
+  stripe: std(0x1e3c78, 0.2, 0.45),
+  plastic: std(0x151617, 0.0, 0.5),
+  brass: std(0xc29a55, 0.9, 0.4),
+  copper: std(0xbd7a50, 0.9, 0.42),
+  insul: std(0xbab5aa, 0.0, 0.92),
+  pcb: std(0x24563a, 0.1, 0.6),
+  chip: std(0x111214, 0.2, 0.4),
+  ptfe: std(0xe6e3da, 0.0, 0.5),
+  ceramic: std(0xf1efe9, 0.0, 0.32),      // the sage cups from the reference photo
+  coffee: std(0x3a1f12, 0.0, 0.22),
+  crema: std(0xa8703f, 0.0, 0.4),
+  water: std(0x6aa6cf, 0.0, 0.15, {transparent: true, opacity: 0.45}),
+  tank: std(0xdfe8ee, 0.0, 0.1, {transparent: true, opacity: 0.38}),
+  element: std(0x7a7f85, 0.85, 0.4, {emissive: 0xd2381c, emissiveIntensity: 0}),
+  led: std(0x99c7ff, 0, 0.3, {emissive: 0x6fa8ff, emissiveIntensity: 1.0}),
+  ledRed: std(0xff6b5a, 0, 0.3, {emissive: 0xff4a35, emissiveIntensity: 1.0}),
+  wire: std(0x23262a, 0.0, 0.6),
+  face: std(0xf2f2ee, 0.0, 0.5),
+};
+const ACCENT = new THREE.Color(0xd2381c);
+
+/* ================================================================ skins
+   La Marzocco sells the Micra in stainless and several body colours; the last skin is a racing livery
+   in the spirit of the reference photo, without any maker's names or marks. */
+const SKINS = [
+  {id: 'steel', name: '不锈钢', body: [0xc8ccd1, 0.9, 0.36], tray: [0xc8ccd1, 0.9, 0.36], swatch: '#c8ccd1'},
+  {id: 'black', name: '曜黑', body: [0x1d1e21, 0.25, 0.5], tray: [0x1d1e21, 0.25, 0.5], swatch: '#1d1e21'},
+  {id: 'white', name: '奶油白', body: [0xece6da, 0.05, 0.42], tray: [0xece6da, 0.05, 0.42], swatch: '#ece6da'},
+  {id: 'red', name: '经典红', body: [0xb5241c, 0.2, 0.4], tray: [0xb5241c, 0.2, 0.4], swatch: '#b5241c'},
+  {id: 'yellow', name: '柠檬黄', body: [0xe7b52a, 0.15, 0.42], tray: [0xe7b52a, 0.15, 0.42], swatch: '#e7b52a'},
+  {id: 'blue', name: '天空蓝', body: [0x7fb3d6, 0.15, 0.42], tray: [0x7fb3d6, 0.15, 0.42], swatch: '#7fb3d6'},
+  {id: 'grey', name: '岩灰', body: [0x6f7377, 0.3, 0.5], tray: [0x6f7377, 0.3, 0.5], swatch: '#6f7377'},
+  {id: 'race', name: '赛道条纹', body: [0xd0d4d8, 0.9, 0.34], tray: [0xc4271f, 0.2, 0.38], stripes: true, swatch: 'linear-gradient(180deg,#d0d4d8 0 35%,#1e3c78 35% 48%,#c4271f 48% 62%,#4d7fc0 62% 72%,#d0d4d8 72%)'},
+];
+
+/* ================================================================ geometry helpers (absolute mm) */
+const root = new THREE.Group(); scene.add(root);
+const parts = [], meshes = [], anchors = [];
+const UP = new THREE.Vector3(0, 1, 0);
+function boxMM(x0, x1, y0, y1, z0, z1, mat, r = 0) {
+  const w = x1 - x0, h = y1 - y0, d = z1 - z0;
+  const g = r > 0 ? new RoundedBoxGeometry(w, h, d, 3, Math.min(r, w / 2 - .01, h / 2 - .01, d / 2 - .01)) : new THREE.BoxGeometry(w, h, d);
+  const m = new THREE.Mesh(g, mat); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.boxDims = [w, h, d]; return m;
+}
+function cylBetween(a, b, r, mat, seg = 24, r2) {
+  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), d = B.clone().sub(A);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r2 ?? r, r, d.length(), seg), mat);
+  m.position.copy(A).addScaledVector(d, 0.5);
+  m.quaternion.setFromUnitVectors(UP, d.normalize()); return m;
+}
+const cylY = (r, y0, y1, x, z, mat, seg) => cylBetween([x, y0, z], [x, y1, z], r, mat, seg);
+const cylZ = (r, z0, z1, x, y, mat, seg) => cylBetween([x, y, z0], [x, y, z1], r, mat, seg);
+const cylX = (r, x0, x1, y, z, mat, seg) => cylBetween([x0, y, z], [x1, y, z], r, mat, seg);
+function tube(pts, r, mat, closed = false, segs) {
+  const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p)), closed, 'centripetal');
+  const m = new THREE.Mesh(new THREE.TubeGeometry(curve, segs || Math.max(24, pts.length * 16), r, 12, closed), mat);
+  m.userData.curve = curve; return m;
+}
+function lathe(profile, mat, x, z, seg = 48) {
+  const m = new THREE.Mesh(new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), seg), mat);
+  m.position.set(x, 0, z); return m;
+}
+function prismZ(outline, z0, z1, mat, holes = []) {      // XY outline extruded along +z
+  const s = new THREE.Shape(outline.map(([x, y]) => new THREE.Vector2(x, y)));
+  for (const h of holes) s.holes.push(h);
+  const m = new THREE.Mesh(new THREE.ExtrudeGeometry(s, {depth: z1 - z0, bevelEnabled: false, curveSegments: 32}), mat);
+  m.position.z = z0; return m;
+}
+function skin(m, kind) { m.userData.skin = kind; return m; }
+
+/* Explode paths, in order: portafilter, drawer, wands, top box, group, front plate and side tube,
+   then the boilers, pump and board, the base last. Each was checked so nothing crosses anything:
+   the side tube slides back along its own axis, so it never touches what it surrounds. */
+const EX = {
+  pf: {path: [[0, 0, 380]], delay: 0},
+  water: {path: [[0, 0, 340]], delay: 0.05},
+  wand: {path: [[0, 0, 200], [170, 0, 0]], delay: 0.3},
+  top: {path: [[0, 400, 0]], delay: 0.2},
+  group: {path: [[0, 0, 300]], delay: 0.35},
+  shell: {path: [[0, 0, 0]], delay: 0.45},
+  steam: {path: [[0, 260, 0]], delay: 0.75},
+  pump: {path: [[-150, 0, 0]], delay: 0.7},
+  elec: {path: [[-150, 0, 0]], delay: 0.7},
+  frame: {path: [[0, -120, 0]], delay: 0.8},
+  pipe: {path: [[0, 0, 0]], delay: 0},
+};
+function unit(sub, objs, opts = {}) {
+  const g = new THREE.Group();
+  for (const o of [].concat(objs)) g.add(o);
+  root.add(g);
+  const p = {obj: g, sub, path: opts.path || EX[sub].path, delay: opts.delay ?? EX[sub].delay, rel: opts.rel || [sub === 'top' ? 'shell' : sub], glass: opts.glass || null, shell: sub === 'top' || sub === 'shell' || opts.shell};
+  parts.push(p);
+  g.traverse(m => {
+    if (!m.isMesh) return;
+    m.material = m.material.clone(); m.userData.sm = m.material;
+    m.castShadow = !opts.noShadow; m.receiveShadow = true;
+    m.userData.part = p; m.userData.base = m.material.opacity; m.userData.op = m.material.opacity;
+    meshes.push(m);
+  });
+  return p;
+}
+function anchor(p, pos, title, spec, subs) { anchors.push({p, pos: new THREE.Vector3(...pos), title, spec, subs}); }
+
+/* ================================================================ geometry, matched to the reference photos and the side cutaway
+   Axes: x to the right, y up, z toward the front. The main body's front face is z = 0; the head box sticks out in front of it.
+   Overall 290 wide, 335 high, 395 deep at the base (drip tray front to the back foot), drip tray 270 wide. */
+const GZ = 60;        // group axis
+const KY_V = 238;     // height of the knobs and their valves
+const HB = {x: 133, y0: 200, y1: 322, z1: 126};   // head box
+const BODY = {x: 145, y0: 70, y1: 335, zTop: -309, zBot: -254};
+
+/* ---------------------------------------------------------------- base plinth (black) with the feet, switch and plug; holds the tank */
+{
+  const black = std(0x17181a, 0.2, 0.55);
+  const objs = [
+    boxMM(-135, 135, 64, 70, -250, 0, black), boxMM(-135, 135, 6, 9, -250, 0, black),
+    boxMM(-135, -132, 6, 70, -250, 0, black), boxMM(132, 135, 6, 70, -250, 0, black),
+    boxMM(-135, 135, 6, 70, -250, -247, black),
+    boxMM(-137, -135, 28, 48, -70, -44, MAT.plastic, 2),        // double-pole rocker switch E.2.010, left side
+    boxMM(70, 100, 26, 50, -253, -250, MAT.plastic, 2),         // panel plug E.4.246
+  ];
+  for (const x of [-112, 112]) for (const z of [-228, -22]) objs.push(cylY(14, 0, 6, x, z, MAT.plastic, 20));   // feet F.2.064
+  const p = unit('frame', objs, {path: [[0, -150, 0]], delay: 0.8});
+  anchor(p, [-136, 48, -57], '电源开关', '底座左侧', ['elec']);
+}
+
+/* ---------------------------------------------------------------- water tank A.7.022.R, inside the base */
+let tankWater;
+{
+  const tank = boxMM(-125, 125, 12, 62, -240, -8, MAT.tank, 4);
+  tankWater = boxMM(-121, 121, 15, 59, -236, -12, MAT.water);
+  // the drip tray must be first among the 'water' units: it is P_WATER in the frame loop
+  var TANK_OBJS = [tank, tankWater];
+}
+
+/* ---------------------------------------------------------------- drip tray C.1.656 with its wire grid, and the cup */
+let cupLiquid, crema;
+{
+  const tray = [
+    boxMM(-135, 135, 6, 62, 142, 148, MAT.trayPaint, 3), boxMM(-135, -131, 6, 62, 2, 148, MAT.trayPaint, 2),
+    boxMM(131, 135, 6, 62, 2, 148, MAT.trayPaint, 2), boxMM(-135, 135, 6, 9, 2, 148, MAT.trayPaint),
+  ].map(m => skin(m, 'tray'));
+  const pan = boxMM(-131, 131, 9, 60, 2, 142, MAT.steelDark);
+  const rim = [boxMM(-135, 135, 62, 66, 142, 148, MAT.steel, 1), boxMM(-135, 135, 62, 66, 2, 8, MAT.steel, 1),
+               boxMM(-135, -129, 62, 66, 2, 148, MAT.steel, 1), boxMM(129, 135, 62, 66, 2, 148, MAT.steel, 1)];
+  const grate = [];
+  for (let x = -124; x <= 124.1; x += 8) grate.push(boxMM(x - 1.4, x + 1.4, 66, 69, 8, 142, MAT.steel));   // wire grid C.1.654, bars run front to back
+  grate.push(boxMM(-128, 128, 64, 66, 12, 16, MAT.steel), boxMM(-128, 128, 64, 66, 134, 138, MAT.steel));
+  const cup = lathe([[0, 69], [22, 69], [25, 71], [29, 85], [31, 106], [31.5, 112], [29.5, 112], [29, 106], [27, 85], [24, 74], [0, 74]], MAT.ceramic, 0, GZ);
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(11, 3, 12, 28, Math.PI * 1.25), MAT.ceramic);
+  handle.position.set(35, 92, GZ); handle.rotation.z = -Math.PI * 0.62;
+  cupLiquid = new THREE.Mesh(new THREE.CylinderGeometry(26, 24, 1, 40), MAT.coffee);
+  crema = new THREE.Mesh(new THREE.CylinderGeometry(26.2, 26.2, 0.8, 40), MAT.crema);
+  cupLiquid.position.set(0, 74, GZ); crema.position.set(0, 74, GZ);
+  cupLiquid.userData.xcol = 0x5a3220; crema.userData.xcol = 0x8a5a30;
+  const p = unit('water', [...tray, pan, ...rim, ...grate, cup, handle, cupLiquid, crema], {path: [[0, 0, 440]], delay: 0.05});
+  anchor(p, [-120, 66, 140], '接水盘', '27 cm 宽 · 取下即见水箱', ['water']);
+  const pt = unit('water', TANK_OBJS, {path: [[0, 0, 400]], delay: 0.15});
+  pt.isTank = true;
+  anchor(pt, [0, 62, -120], '水箱', '1.5 L · 藏在机身下方的底座里', ['water', 'all']);
+}
+
+/* ---------------------------------------------------------------- main body: two side plates with the sloping back, top, back panel */
+function sidePlate(x0, mat) {   // profile in (z, y), extruded 3 mm toward -x from x0
+  const s = new THREE.Shape([[0, BODY.y0], [0, BODY.y1], [BODY.zTop, BODY.y1], [BODY.zBot, BODY.y0]].map(([z, y]) => new THREE.Vector2(z, y)));
+  const m = new THREE.Mesh(new THREE.ExtrudeGeometry(s, {depth: 3, bevelEnabled: false}), mat);
+  m.rotation.y = -Math.PI / 2; m.position.x = x0; return m;
+}
+{
+  const sides = [sidePlate(BODY.x, MAT.paint), sidePlate(-BODY.x + 3, MAT.paint)].map(m => skin(m, 'body'));
+  const top = skin(boxMM(-145, 145, 330, 335, -309, 0, MAT.paint, 2), 'body');
+  const lip = skin(boxMM(-145, 145, 322, 330, -3, 0, MAT.paint), 'body');
+  const grid = [];
+  for (let z = -290; z <= -24; z += 12) for (const [a, b] of [[-128, -16], [16, 128]]) grid.push(boxMM(a, b, 335, 337, z - 2.4, z + 2.4, MAT.steelDark, 1));   // cup warmer grid C.1.659
+  const pb = unit('shell', [...sides, top, lip, ...grid], {path: [[0, 0, -500]], delay: 0.45});
+  anchor(pb, [0, 337, -160], '温杯盘', '机身顶部 · 锅炉余热暖杯', ['shell']);
+  // back panel, sloping like the side profile
+  const s = new THREE.Shape([[BODY.zTop, BODY.y1], [BODY.zTop + 3, BODY.y1], [BODY.zBot + 3, BODY.y0], [BODY.zBot, BODY.y0]].map(([z, y]) => new THREE.Vector2(z, y)));
+  const back = skin(new THREE.Mesh(new THREE.ExtrudeGeometry(s, {depth: 284, bevelEnabled: false}), MAT.paint), 'body');
+  back.rotation.y = -Math.PI / 2; back.position.x = 142;
+  unit('shell', back, {path: [[0, 0, -580]], delay: 0.35});
+}
+
+/* ---------------------------------------------------------------- lower front panel (stainless) with both gauges: E.3.033 0–18 bar left, E.3.034 0–3 bar right */
+function makeGaugeTexture(max, major, minor, red) {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#f6f5f1'; g.beginPath(); g.arc(128, 128, 128, 0, Math.PI * 2); g.fill();
+  g.translate(128, 128);
+  const a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, ang = (v) => a0 + (a1 - a0) * v / max;
+  g.strokeStyle = '#c4271f'; g.lineWidth = 9; g.beginPath(); g.arc(0, 0, 98, ang(red[0]), ang(red[1])); g.stroke();
+  for (let v = 0; v <= max + 1e-6; v += minor) {
+    const a = ang(v), isMajor = Math.abs(v / major - Math.round(v / major)) < 1e-6;
+    g.strokeStyle = '#16181b'; g.lineWidth = isMajor ? 5 : 2.5;
+    g.beginPath(); g.moveTo(Math.cos(a) * 114, Math.sin(a) * 114); g.lineTo(Math.cos(a) * (isMajor ? 90 : 102), Math.sin(a) * (isMajor ? 90 : 102)); g.stroke();
+    if (isMajor) { g.fillStyle = '#16181b'; g.font = '700 30px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(v), Math.cos(a) * 64, Math.sin(a) * 64); }
+  }
+  g.fillStyle = '#5b636c'; g.font = '600 22px monospace'; g.textAlign = 'center'; g.fillText('bar', 0, 58);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const gaugeAngle = (v, max) => -(Math.PI * 0.75 + Math.PI * 1.5 * clamp(v, 0, max) / max) - Math.PI / 2;
+const GAUGES = [{key: 'brew', x: -84, max: 18, major: 3, minor: 1, red: [8, 10]}, {key: 'steam', x: 84, max: 3, major: 1, minor: 0.25, red: [1.2, 1.8]}];
+{
+  const GY = 140, GR = 20;
+  const holes = GAUGES.map(G => { const h = new THREE.Path(); h.absarc(G.x, GY, GR, 0, Math.PI * 2, true); return h; });
+  const plate = prismZ([[-142, BODY.y0], [142, BODY.y0], [142, HB.y0], [-142, HB.y0]], -3, 0, MAT.steel, holes);
+  // the body's front above the gauges, hidden behind the head box
+  const upper = skin(boxMM(-142, 142, HB.y0, 322, -3, 0, MAT.paint), 'body');
+  const objs = [plate, upper];
+  for (const G of GAUGES) {
+    const face = new THREE.Mesh(new THREE.CircleGeometry(GR, 48), new THREE.MeshStandardMaterial({map: makeGaugeTexture(G.max, G.major, G.minor, G.red), roughness: 0.4}));
+    face.position.set(G.x, GY, 1);
+    const body = cylZ(GR + 2, -30, 1, G.x, GY, MAT.steel, 40);
+    const bezel = new THREE.Mesh(new THREE.TorusGeometry(GR + 1.5, 2.6, 12, 48), MAT.steel); bezel.position.set(G.x, GY, 3.5);
+    const lens = cylZ(GR, 1.2, 4.5, G.x, GY, std(0xffffff, 0, 0.05, {transparent: true, opacity: 0.12}), 40);
+    G.needle = new THREE.Group();
+    G.needle.add(boxMM(-0.9, 0.9, -4, 16, 0, 0.8, std(0xd42a1e, 0, .4)));   // red needle, as in the photo
+    G.needle.position.set(G.x, GY, 1.8);
+    const hub = cylZ(2.4, 1.6, 3, G.x, GY, MAT.plastic, 16);
+    objs.push(face, body, bezel, lens, G.needle, hub);
+  }
+  const screws = [[-128, 160], [128, 160], [-128, 84], [128, 84]].map(([x, y]) => cylZ(3, 0, 1.5, x, y, MAT.steelDark, 16));
+  const pp = unit('shell', [...objs, ...screws], {path: [[0, 0, 240]], delay: 0.5});
+  anchor(pp, [-84, 162, 4], '冲煮压力表', '0–18 bar · 红色指针', ['group', 'paddle']);
+  anchor(pp, [84, 162, 4], '蒸汽压力表', '0–3 bar', ['steam']);
+}
+
+/* ---------------------------------------------------------------- head box: front panel C.1.660 and group cover C.1.661, knobs, the paddle module */
+let paddle, paddleMeshes = [], stripeMeshes = [];
+const KNOBS = {};      // steam (right) and hot water (left): each turns about its own axis
+function knob(x, y, z0) {
+  const len = 46, r = 18, g = new THREE.Group();
+  g.add(cylZ(21, z0, z0 + 5, 0, 0, MAT.plastic, 32), cylZ(r, z0 + 5, z0 + len - 4, 0, 0, MAT.plastic, 32));
+  for (let i = 0; i < 12; i++) {                     // the fluted grip
+    const a = i / 12 * Math.PI * 2, cx = Math.cos(a) * (r + 0.6), cy = Math.sin(a) * (r + 0.6);
+    g.add(boxMM(cx - 1.7, cx + 1.7, cy - 1.7, cy + 1.7, z0 + 9, z0 + len - 9, MAT.plastic));
+  }
+  g.add(cylZ(16.5, z0 + len - 4, z0 + len, 0, 0, MAT.steel, 32));                 // silver end cap
+  g.add(boxMM(-1.2, 1.2, 6, 14, z0 + len, z0 + len + 0.9, MAT.steelDark));       // the index mark shows how far it is open
+  g.position.set(x, y, 0);
+  return g;
+}
+{
+  const front = skin(boxMM(-HB.x, HB.x, HB.y0, HB.y1, HB.z1 - 6, HB.z1, MAT.paint, 2), 'body');
+  const sides = [-1, 1].map(s => skin(boxMM(s > 0 ? HB.x - 6 : -HB.x, s > 0 ? HB.x : -HB.x + 6, HB.y0, HB.y1, 0, HB.z1, MAT.paint, 2), 'body'));
+  const top = skin(boxMM(-HB.x, HB.x, HB.y1 - 6, HB.y1, 0, HB.z1, MAT.paint, 2), 'body');
+  const bs = new THREE.Shape([[-HB.x, 0], [HB.x, 0], [HB.x, HB.z1], [-HB.x, HB.z1]].map(([x, z]) => new THREE.Vector2(x, z)));
+  const hole = new THREE.Path(); hole.absarc(0, GZ, 48, 0, Math.PI * 2, true); bs.holes.push(hole);
+  const bottom = skin(new THREE.Mesh(new THREE.ExtrudeGeometry(bs, {depth: 3, bevelEnabled: false, curveSegments: 32}), MAT.paint), 'body');
+  bottom.rotation.x = Math.PI / 2; bottom.position.y = HB.y0 + 3;
+  // stainless brackets tying the head box to the body, and the screws on top (photo 3)
+  const brackets = [-1, 1].map(s => boxMM(s > 0 ? HB.x : -HB.x - 2, s > 0 ? HB.x + 2 : -HB.x, HB.y0 + 8, HB.y1 - 4, 0, 24, MAT.steel));
+  const bScrews = [];
+  for (const s of [-1, 1]) for (const y of [205, 290]) bScrews.push(cylX(3, s > 0 ? HB.x + 2 : -HB.x - 3.5, s > 0 ? HB.x + 3.5 : -HB.x - 2, y, 12, MAT.steelDark, 16));
+  const tScrews = [];
+  for (const x of [-118, 118]) for (const z of [12, 112]) tScrews.push(cylY(3, HB.y1, HB.y1 + 1.4, x, z, MAT.steelDark, 16));
+  for (const [y0, y1, col] of [[300, 310, 0x1e3c78], [292, 300, 0xc4271f], [287, 292, 0x4d7fc0]]) {
+    const mat = std(col, 0.2, 0.45);
+    stripeMeshes.push(boxMM(-HB.x + 2, HB.x - 2, y0, y1, HB.z1, HB.z1 + 1.2, mat),
+      boxMM(-HB.x - 1.2, -HB.x, y0, y1, 26, HB.z1 - 2, mat), boxMM(HB.x, HB.x + 1.2, y0, y1, 26, HB.z1 - 2, mat));
+  }
+  // steam (right) and hot water (left) valves B.2.040 with fluted knobs F.1.231
+  const KY = KY_V, knobs = [], valves = [];
+  for (const sx of [-1, 1]) {
+    const k = knob(sx * 100, KY, HB.z1); knobs.push(k);
+    KNOBS[sx > 0 ? 'steam' : 'hot'] = {g: k, meshes: k.children};
+    valves.push(cylZ(13, 72, HB.z1 - 6, sx * 100, KY, MAT.brass, 20), boxMM(sx * 100 - 11, sx * 100 + 11, KY - 11, KY + 11, 60, 72, MAT.brass, 2));
+  }
+  // paddle module: a black wedge (front frame C.2.067) with the heating light at its left and the tank light at its right end
+  const PY = 252, ps = new THREE.Shape([[HB.z1, PY - 14], [HB.z1 + 32, PY - 10], [HB.z1 + 35, PY + 6], [HB.z1, PY + 22]].map(([z, y]) => new THREE.Vector2(z, y)));
+  const wedge = new THREE.Mesh(new THREE.ExtrudeGeometry(ps, {depth: 108, bevelEnabled: true, bevelThickness: 2, bevelSize: 2, bevelSegments: 2}), std(0x111214, 0.25, 0.22));
+  wedge.rotation.y = -Math.PI / 2; wedge.position.x = 54;
+  const glassHeat = boxMM(-46, -20, PY - 6, PY + 2, HB.z1 + 33, HB.z1 + 36.5, MAT.led, 2);
+  const glassTank = boxMM(50, 56, PY - 4, PY + 6, HB.z1 + 14, HB.z1 + 28, MAT.ledRed, 2);
+  // paddle handle C.2.068 on lever C.1.666: a vertical blade standing in front of the wedge, pivoting about a vertical axis
+  paddle = new THREE.Group();
+  const blade = boxMM(-4.5, 4.5, -38, 20, 0, 40, std(0x111214, 0.25, 0.3), 4);
+  const hub = cylY(4, -16, 16, 0, 0, MAT.plastic, 16);
+  paddle.add(blade, hub); paddle.position.set(0, PY, HB.z1 + 39);
+  paddleMeshes = [blade, hub, wedge];
+  const switchBox = boxMM(-6, 20, PY - 4, PY + 12, 108, 118, MAT.plastic, 2);   // microswitch E.2.111 behind the paddle
+  // barista lights E.1.034 under the head box
+  const bLights = [-1, 1].map(s => boxMM(s * 58 - 16, s * 58 + 16, HB.y0 - 1.5, HB.y0, 96, 110, MAT.led, 1));
+  [...knobs.flatMap(k => k.children), ...valves].forEach(m => m.userData.solid = 'wand');
+  [wedge, glassHeat, glassTank, blade, hub, switchBox].forEach(m => m.userData.solid = 'paddle');
+  const pt = unit('top', [front, ...sides, top, bottom, ...brackets, ...bScrews, ...tScrews, ...stripeMeshes, ...knobs, ...valves, wedge, glassHeat, glassTank, paddle, switchBox, ...bLights],
+    {path: [[0, 430, 0]], delay: 0.2, rel: ['shell', 'paddle']});
+  anchor(pt, [0, PY + 20, HB.z1 + 60], '冲煮拨杆', '竖直拨片 · 待机回正，向右扳开始萃取', ['paddle', 'group']);
+  anchor(pt, [-33, PY - 2, HB.z1 + 36], '加热指示', '蓝灯 · 锅炉加热中', ['paddle']);
+  anchor(pt, [53, PY + 1, HB.z1 + 21], '缺水指示', '红灯 · 水箱需加水', ['paddle']);
+  anchor(pt, [100, KY + 18, HB.z1 + 46], '蒸汽旋钮', '右侧 · 控制蒸汽棒', ['wand']);
+  anchor(pt, [-100, KY + 18, HB.z1 + 46], '热水旋钮', '左侧 · 控制热水嘴', ['wand']);
+  anchor(pt, [-HB.x, HB.y1, 60], '机头', '前面板 + 冲煮头罩 · 随皮肤换色', ['shell']);
+}
+
+/* ---------------------------------------------------------------- steam boiler L.1.016.R: vertical, 1.6 L, 1300 W, preheater T.1.303 wound round it */
+let steamWater, element, steamShell, coilCurve;
+{
+  const BX = 30, BZ = -78, R = 60, CR = 70;
+  steamShell = cylY(R, 94, 260, BX, BZ, MAT.insul, 48);
+  const caps = [cylY(R + 3, 90, 96, BX, BZ, MAT.steel, 48), cylY(R + 3, 258, 264, BX, BZ, MAT.steel, 48)];
+  const flange = cylY(26, 82, 90, BX, BZ, MAT.brass, 32);
+  element = tube([[BX - 16, 86, BZ], [BX - 16, 210, BZ], [BX, 226, BZ], [BX + 16, 210, BZ], [BX + 16, 86, BZ]], 3.8, MAT.element);
+  steamWater = cylY(R - 3, 97, 257, BX, BZ, MAT.water.clone(), 48);
+  steamWater.material.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, -1, 0), 215)];
+  steamWater.userData.inner = true; steamWater.userData.noLines = true; element.userData.inner = true;
+  const safety = [cylY(7.5, 264, 276, BX + 26, BZ + 20, MAT.brass), cylY(10, 276, 282, BX + 26, BZ + 20, MAT.brass, 6)];     // B.2.042, 2.5 bar
+  const vac = [cylY(6.5, 264, 274, BX - 26, BZ - 20, MAT.steel), cylY(8.5, 274, 280, BX - 26, BZ - 20, MAT.steel, 6)];        // B.2.029
+  const probeCap = cylY(5, 264, 276, BX + 4, BZ + 34, MAT.plastic, 12);
+  const probe = cylBetween([BX + 4, 264, BZ + 34], [BX + 4, 124, BZ + 34], 1.8, MAT.steelDark); probe.userData.inner = true;   // LA052, 140 mm
+  const helix = [];
+  for (let i = 0; i <= 240; i++) { const k = i / 240, th = Math.PI + k * 6 * Math.PI * 2; helix.push([BX + CR * Math.cos(th), 100 + k * 150, BZ + CR * Math.sin(th)]); }
+  const coil = tube(helix, 3.6, MAT.copper, false, 900);
+  coilCurve = coil.userData.curve;
+  [steamShell, ...caps, steamWater].forEach(m => m.userData.heat = 'steam');
+  element.userData.heat = 'element'; coil.userData.heat = 'coil';
+  const p = unit('steam', [steamShell, ...caps, flange, element, steamWater, ...safety, ...vac, probeCap, probe, coil], {path: [[0, 360, 0]], delay: 0.75, glass: [steamShell]});
+  anchor(p, [BX + R, 230, BZ], '蒸汽锅炉', '立式 1.6 L · 1300 W', ['steam', 'all']);
+  anchor(p, [BX - CR, 175, BZ], '外置预热管', '进水先绕锅炉一圈再去冲煮头', ['steam']);
+  anchor(p, [BX + 26, 282, BZ + 20], '安全阀', '2.5 bar 起跳', ['steam']);
+  anchor(p, [BX + 16, 150, BZ], '加热管', '1300 W · 低于设定压力时通电', ['steam']);
+  anchor(p, [BX + 4, 124, BZ + 34], '水位探针', '140 mm · 触发自动补水', ['steam']);
+}
+
+/* ---------------------------------------------------------------- coffee group: machined boiler L.1.015 (0.23 L, 500 W) straight on the group, 3-way valve */
+let groupShell, cartridge;
+{
+  const bay = lathe([[0, 186], [26, 186], [26, 188.5], [40, 188.5], [42, 197], [44, 200], [0, 200]], MAT.steel, 0, GZ);   // bayonet ring A.3.011
+  const screen = cylY(26, 185.6, 186.4, 0, GZ, MAT.steelDark, 40);
+  const lugs = [-1, 1].map(s => boxMM(s * 42 - 5, s * 42 + 5, 189, 196, GZ - 7, GZ + 7, MAT.steel, 1));
+  groupShell = cylY(45, 200, 300, 0, GZ, MAT.steel, 48);
+  const cap = cylY(28, 300, 306, 0, GZ, MAT.steelDark, 32);            // coffee boiler cap A.5.176
+  cartridge = cylY(6, 208, 296, 18, GZ, MAT.element.clone(), 16); cartridge.userData.inner = true;   // 500 W element E.6.047
+  const ntc = cylBetween([30, 284, GZ - 30], [40, 292, GZ - 40], 3, MAT.steelDark, 12);
+  const sol = [boxMM(-78, -50, 225, 253, GZ - 14, GZ + 14, MAT.brass, 3), cylY(12, 253, 281, -64, GZ, MAT.plastic, 24)];   // 3-way solenoid B.4.007
+  groupShell.userData.heat = 'coffee'; cap.userData.heat = 'coffee'; cartridge.userData.heat = 'element';
+  const p = unit('group', [bay, screen, ...lugs, groupShell, cap, cartridge, ntc, ...sol], {path: [[0, 0, 300]], delay: 0.5, glass: [groupShell], rel: ['group', 'paddle']});
+  anchor(p, [45, 270, GZ], '咖啡锅炉', '0.23 L · 500 W · 直接压在冲煮头上', ['group', 'all']);
+  anchor(p, [0, 188, GZ + 42], '冲煮头', '卡口环 + 分水网', ['group']);
+  anchor(p, [-64, 281, GZ], '三通电磁阀', '关阀时把余压排进接水盘', ['group', 'paddle']);
+}
+
+/* ---------------------------------------------------------------- portafilter A.7.027: handle points forward and a little right, as in photos 3 and 4 */
+{
+  const ring = lathe([[0, 164], [29, 164], [35, 167], [37, 186], [29.5, 186], [28.5, 172], [0, 172]], MAT.steel, 0, GZ);
+  const puck = cylY(28, 181, 184.5, 0, GZ, std(0x2b1a10, 0, .9), 40);
+  const ears = [-1, 1].map(s => boxMM(s * 39 - 4, s * 39 + 4, 176, 184, GZ - 7, GZ + 7, MAT.steel, 1));
+  const spout = boxMM(-16, 16, 154, 165, GZ - 12, GZ + 12, MAT.steel, 5);
+  const noz = [-9, 9].map(x => cylY(3.4, 144, 155, x, GZ, MAT.steel, 14));
+  const dir = new THREE.Vector3(0.28, -0.13, 0.95).normalize();
+  const A = new THREE.Vector3(0, 176, GZ).addScaledVector(dir, 36), B = A.clone().addScaledVector(dir, 22), C = A.clone().addScaledVector(dir, 128);
+  const neck = cylBetween(A.toArray(), B.toArray(), 9, MAT.steel);
+  const handle = cylBetween(B.toArray(), C.toArray(), 13, MAT.plastic, 24, 11);
+  const end = new THREE.Mesh(new THREE.SphereGeometry(13, 20, 12), MAT.plastic); end.position.copy(C);
+  const p = unit('pf', [ring, puck, ...ears, spout, ...noz, neck, handle, end], {path: [[0, 0, 400]], delay: 0});
+  anchor(p, C.toArray(), '手柄', '58 mm · 双出液嘴，可换无底', ['pf', 'all']);
+}
+
+/* ---------------------------------------------------------------- steam wand T.2.139: swan neck under the right of the head; hot water wand A.5.171 on the left */
+let steamTip;
+{
+  const wand = tube([[118, HB.y0, 96], [120, 172, 100], [126, 140, 126], [125, 116, 156], [122, 102, 167]], 5.5, MAT.steel);
+  const joint = cylY(8, HB.y0 - 6, HB.y0, 118, 96, MAT.steel, 20);
+  const tip = cylBetween([122, 104, 167], [122, 90, 169], 6, MAT.steelDark, 16);
+  steamTip = new THREE.Vector3(122, 90, 169);
+  const pw = unit('wand', [wand, joint, tip], {path: [[0, 0, 220], [200, 0, 0]], delay: 0.25});
+  pw.isSteam = true;
+  anchor(pw, [126, 140, 126], '蒸汽棒', '天鹅颈 · 蒸汽嘴 Ø1.1 mm', ['wand', 'all']);
+  const spout = tube([[-112, HB.y0, 98], [-112, 186, 99], [-112, 178, 100]], 4.6, MAT.steel);
+  const diff = cylBetween([-112, 180, 100], [-112, 169, 101], 6.5, MAT.steelDark, 16);
+  const ph = unit('wand', [spout, diff], {path: [[0, 0, 220], [-200, 0, 0]], delay: 0.25});
+  anchor(ph, [-112, 169, 101], '热水嘴', '取自蒸汽锅炉 · Ø2 mm 节流', ['wand']);
+}
+
+/* ---------------------------------------------------------------- rotary vane pump E.3.031 (85 L/h) on a 100 W motor; the motor's axis runs left to right */
+let fan;
+{
+  const PY = 128, PZ = -205;
+  const head = cylX(28, 8, 40, PY, PZ, MAT.brass, 32);
+  const portIn = cylY(6, 92, 100, 24, PZ, MAT.brass), portOut = cylY(6, 156, 164, 24, PZ, MAT.brass);
+  const motor = cylX(38, 40, 122, PY, PZ, MAT.steelDark, 40);
+  const ribs = [58, 80, 102].map(x => cylX(39.5, x - 2, x + 2, PY, PZ, MAT.plastic, 40));
+  fan = new THREE.Group();
+  for (let i = 0; i < 6; i++) { const g = new THREE.Group(); g.add(boxMM(-1, 1, 0, 28, -4, 4, MAT.plastic)); g.rotation.x = i * Math.PI / 3; fan.add(g); }
+  fan.position.set(126, PY, PZ);
+  const mounts = [20, 110].map(x => cylY(6, 70, 92, x, PZ, MAT.plastic, 12));
+  const cap = cylY(10, 172, 205, 80, -238, std(0x2b4b8a, .2, .5), 20);       // motor capacitor E.7.002.C
+  const p = unit('pump', [head, portIn, portOut, motor, ...ribs, fan, ...mounts, cap], {path: [[200, 0, 0]], delay: 0.75, rel: ['pump', 'paddle']});
+  anchor(p, [24, 164, PZ], '旋转叶片泵', '85 L/h · 不锈钢泵体', ['pump', 'all']);
+  anchor(p, [80, 166, PZ], '泵电机', '100 W · 仅萃取和补水时运转', ['pump']);
+  anchor(p, [80, 205, -238], '电机电容', '启动水泵电机', ['pump']);
+  // manifold A.2.123 with the fill solenoid, expansion valve and check valve, at the back left
+  const manifold = boxMM(-125, -85, 130, 152, -218, -178, MAT.brass, 3);
+  const fillValve = [boxMM(-118, -96, 152, 166, -208, -188, MAT.brass, 2), cylY(10, 166, 190, -107, -198, MAT.plastic, 20)];   // 2-way solenoid B.4.005
+  const exp = [cylY(5.5, 152, 166, -90, -184, MAT.brass), cylY(8, 166, 173, -90, -184, MAT.brass, 6)];                        // expansion valve B.2.041, 12 bar
+  const check = cylZ(6.5, -178, -160, -105, 141, MAT.brass);                                                                   // check valve B.2.027
+  const pm = unit('pump', [manifold, ...fillValve, ...exp, check], {path: [[-200, 0, 0]], delay: 0.75, rel: ['pump', 'paddle']});
+  anchor(pm, [-107, 190, -198], '补水电磁阀', '两通 · 给蒸汽锅炉补水', ['pump']);
+  anchor(pm, [-90, 173, -184], '膨胀阀', '12 bar 自动泄压', ['pump']);
+}
+
+/* ---------------------------------------------------------------- electronic box F.1.234 with the Wi-Fi board E.1.082, standing against the right side */
+let elecBox;
+{
+  elecBox = boxMM(98, 132, 200, 298, -268, -200, std(0x2a2d31, 0.1, 0.55), 3);
+  const board = boxMM(104, 112, 208, 290, -262, -206, MAT.pcb, 1); board.userData.inner = true;
+  const chips = [[-248, 270], [-228, 240], [-216, 220]].map(([z, y]) => { const c = boxMM(100, 104, y - 8, y + 8, z - 10, z + 10, MAT.chip, 1); c.userData.inner = true; return c; });
+  const harness = [
+    tube([[98, 230, -200], [70, 200, -190], [60, 172, -205]], 2.2, MAT.wire),
+    tube([[98, 260, -200], [60, 290, -120], [20, 300, 20]], 2.2, MAT.wire),
+  ];
+  const p = unit('elec', [elecBox, board, ...chips, ...harness], {path: [[220, 0, 0]], delay: 0.7, glass: [elecBox]});
+  anchor(p, [132, 298, -234], '电控盒', '主板 · 双 PID · Wi-Fi', ['elec', 'all']);
+}
+
+/* ---------------------------------------------------------------- water circuits, with flow beads */
+const coilStart = [30 - 70, 100, -78], coilEnd = [30 - 70, 250, -78];
+const PIPES = [
+  {key: 'feed', pts: [[-20, 62, -150], [0, 80, -190], [24, 92, -205]], r: 3.2, mat: MAT.ptfe, rel: ['pump', 'water']},
+  {key: 'feed', pts: [[24, 164, -205], [-12, 160, -182], [-38, 124, -150], coilStart], r: 3.2, mat: MAT.copper, rel: ['pump', 'steam']},
+  {key: 'brew', pts: [coilEnd, [-30, 282, -40], [-10, 292, 0], [0, 290, 18]], r: 3.2, mat: MAT.copper, rel: ['steam', 'group', 'paddle']},
+  {key: 'steam', pts: [[50, 285, -60], [90, 292, -10], [100, 266, 40], [100, KY_V, 60]], r: 3.4, mat: MAT.copper, rel: ['steam', 'wand']},
+  {key: 'steam', pts: [[100, KY_V, 80], [112, 214, 90], [118, HB.y0 + 2, 96]], r: 3.4, mat: MAT.steel, rel: ['steam', 'wand']},
+  {key: 'hot', pts: [[10, 285, -60], [-60, 292, -10], [-100, 266, 40], [-100, KY_V, 60]], r: 3.2, mat: MAT.copper, rel: ['steam', 'wand']},
+  {key: 'hot', pts: [[-100, KY_V, 80], [-110, 214, 92], [-112, HB.y0 + 2, 98]], r: 3.2, mat: MAT.steel, rel: ['steam', 'wand']},
+  {key: 'drain', pts: [[-64, 225, GZ], [-80, 215, 20], [-100, 190, -10], [-100, 80, -12], [-100, 68, 8], [-100, 66, 24]], r: 3.4, mat: MAT.ptfe, rel: ['group', 'water', 'paddle']},
+];
+const beadMat = new THREE.MeshStandardMaterial({color: 0xd2381c, emissive: 0xd2381c, emissiveIntensity: 0.55, roughness: 0.4});
+const beadGeo = new THREE.SphereGeometry(3.4, 10, 8);
+for (const P of PIPES) {
+  const m = tube(P.pts, P.r, P.mat);
+  P.part = unit('pipe', m, {rel: P.rel, noShadow: true});
+  P.curve = m.userData.curve; P.len = P.curve.getLength();
+  P.n = Math.max(3, Math.floor(P.len / 15));
+  P.beads = new THREE.InstancedMesh(beadGeo, beadMat, P.n); P.beads.frustumCulled = false; root.add(P.beads);
+}
+const COIL = {curve: coilCurve, len: coilCurve.getLength()}; COIL.n = Math.floor(COIL.len / 32);
+COIL.beads = new THREE.InstancedMesh(beadGeo, beadMat, COIL.n); COIL.beads.frustumCulled = false; root.add(COIL.beads);
+
+/* ---------------------------------------------------------------- espresso streams + steam plume + drain */
+const streamMat = std(0x4a2814, 0, 0.25, {transparent: true, opacity: 0.92});
+const streams = [-9, 9].map(x => { const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 10), streamMat); m.position.set(x, 0, GZ); root.add(m); return m; });
+const hotStream = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 12), std(0xcfe3f0, 0, 0.1, {transparent: true, opacity: 0.55}));
+hotStream.visible = false; root.add(hotStream);
+const PUFFS = 70;
+const puffs = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 1, transparent: true, opacity: 0.32, depthWrite: false}), PUFFS);
+puffs.frustumCulled = false; root.add(puffs);
+const drainPuffs = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), MAT.water, 24); drainPuffs.frustumCulled = false; root.add(drainPuffs);
+const rnd = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+const puffSeed = Array.from({length: PUFFS}, () => [rnd() * 2 - 1, rnd() * 2 - 1, rnd()]);
+
+/* ================================================================ skin switching */
+const skinBox = document.getElementById('skins');
+let skinId = 'steel';
+try { const s = localStorage.getItem('micra-skin'); if (SKINS.some(k => k.id === s)) skinId = s; } catch (e) {}
+SKINS.forEach(k => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'sw'; b.dataset.skin = k.id;
+  b.innerHTML = `<i style="background:${k.swatch}"></i>${k.name}`;
+  skinBox.appendChild(b);
+});
+function applySkin(id) {
+  const k = SKINS.find(s => s.id === id) || SKINS[0];
+  skinId = k.id;
+  for (const m of meshes) {
+    const kind = m.userData.skin; if (!kind) continue;
+    const [c, mt, r] = kind === 'tray' ? k.tray : k.body;
+    m.userData.sm.color.setHex(c); m.userData.sm.metalness = mt; m.userData.sm.roughness = r;
+  }
+  for (const m of stripeMeshes) m.userData.hide = !k.stripes;
+  document.querySelectorAll('[data-skin]').forEach(b => b.classList.toggle('on', b.dataset.skin === k.id));
+  document.getElementById('skinName').textContent = k.name;
+  document.getElementById('skinDot').style.background = k.swatch;
+  try { localStorage.setItem('micra-skin', k.id); } catch (e) {}
+}
+applySkin(skinId);
+
+/* ================================================================ x-ray look (the La Marzocco cutaway): glass bodies, dark outlines, heat in red */
+const BG_SOLID = new THREE.Color(0xe8e9ec), BG_XRAY = new THREE.Color(0xf6f6f4);
+const XR = {built: false, k: 0, heatMeshes: []};
+const XCOL = {steam: 0xd8322a, element: 0xff2a12, coffee: 0xd94848, coil: 0xc8553e};
+const XOP = {steam: 0.4, element: 0.95, coffee: 0.3, coil: 0.42};
+function buildXray() {
+  for (const m of meshes) {
+    const heat = m.userData.heat, g = m.geometry, isTube = g.type === 'TubeGeometry';
+    const col = heat ? XCOL[heat] : m.userData.xcol ?? (isTube ? 0x5f666d : 0x7d858d);
+    const xo = heat ? XOP[heat] : m.userData.xcol ? 0.85 : isTube ? 0.28 : 0.07;
+    const xm = new THREE.MeshBasicMaterial({color: col, transparent: true, opacity: xo, depthWrite: false, side: THREE.DoubleSide});
+    if (m.userData.sm.clippingPlanes) xm.clippingPlanes = m.userData.sm.clippingPlanes;
+    m.userData.xm = xm; m.userData.xo = xo;
+    if (heat) XR.heatMeshes.push(m);
+    if (!isTube && !m.userData.noLines && g.type !== 'SphereGeometry' && g.type !== 'CircleGeometry') {
+      const eg = m.userData.boxDims ? new THREE.EdgesGeometry(new THREE.BoxGeometry(...m.userData.boxDims)) : new THREE.EdgesGeometry(g, 28);
+      const lm = new THREE.LineBasicMaterial({color: heat ? 0x8e1f1a : 0x2f343a, transparent: true, opacity: 0.5, depthWrite: false});
+      const ls = new THREE.LineSegments(eg, lm); ls.visible = false; ls.raycast = () => {};
+      m.add(ls); m.userData.lines = ls; m.userData.lo = heat ? 0.7 : 0.5;
+    }
+  }
+  XR.built = true;
+}
+
+/* ================================================================ views */
+const VIEWS = {
+  hero: {pos: [-640, 420, 920], tgt: [0, 165, -20]},
+  front: {pos: [0, 240, 1120], tgt: [0, 165, -20]},
+  side: {pos: [-1150, 280, 20], tgt: [0, 170, -60]},
+  xside: {pos: [1380, 210, -40], tgt: [0, 175, -50]},
+  top: {pos: [360, 1150, 420], tgt: [0, 160, -60]},
+  boiler: {pos: [560, 430, 120], tgt: [30, 175, -90]},
+  group: {pos: [-430, 400, 520], tgt: [0, 220, 70]},
+  paddle: {pos: [-160, 300, 560], tgt: [10, 245, 150]},
+  pump: {pos: [560, 300, -560], tgt: [20, 140, -190]},
+  exploded: {pos: [1850, 1250, 2150], tgt: [0, 200, 20]},
+};
+const camFrom = {pos: new THREE.Vector3(), tgt: new THREE.Vector3()};
+const camTo = {pos: new THREE.Vector3(...VIEWS.hero.pos), tgt: new THREE.Vector3(...VIEWS.hero.tgt)};
+let camT0 = -10, camDur = 1.8, camMoving = false;
+camera.position.copy(camTo.pos); controls.target.copy(camTo.tgt);
+function goView(name, now) {
+  const v = VIEWS[name]; if (!v) return;
+  camFrom.pos.copy(camera.position); camFrom.tgt.copy(controls.target);
+  camTo.pos.set(...v.pos); camTo.tgt.set(...v.tgt);
+  camT0 = now; camMoving = true;
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === name));
+}
+
+/* ================================================================ UI state */
+const S = {iso: 'all', xray: false, E: 0, Etgt: 0, paused: false, instant: false};
+function setIso(sub) { S.iso = sub; document.querySelectorAll('[data-sub]').forEach(b => b.classList.toggle('on', b.dataset.sub === sub)); }
+function setXray(on) { S.xray = on; document.getElementById('btn-xray').classList.toggle('on', on); }
+function setExplode(on) { S.Etgt = on ? 1 : 0; const b = document.getElementById('btn-explode'); b.classList.toggle('on', on); b.textContent = on ? '组装' : '拆解'; }
+const SUBVIEW = {all: null, steam: 'boiler', group: 'group', paddle: 'paddle', pump: 'pump', wand: 'hero', water: 'hero', elec: 'xside', pf: 'group'};
+
+/* ================================================================ tour */
+const TOUR = [
+  {at: 0.0, view: 'hero', iso: 'all', xray: false, ex: false},
+  {at: 3.5, click: '[data-skin="race"]', skin: 'race'},
+  {at: 7.0, click: '[data-skin="black"]', skin: 'black'},
+  {at: 10.5, click: '[data-skin="steel"]', skin: 'steel'},
+  {at: 14.0, click: '[data-sub="paddle"]', iso: 'paddle', view: 'paddle'},
+  {at: 22.0, click: '[data-sub="steam"]', iso: 'steam', view: 'boiler'},
+  {at: 29.0, click: '[data-sub="group"]', iso: 'group', view: 'group'},
+  {at: 36.0, click: '[data-sub="water"]', iso: 'water', view: 'hero'},
+  {at: 42.0, click: '#btn-xray', iso: 'all', xray: true, view: 'xside'},
+  {at: 49.0, view: 'hero'},
+  {at: 52.0, view: 'xside'},
+  {at: 55.0, click: '#btn-xray', xray: false, view: 'hero'},
+  {at: 59.0, click: '#btn-explode', ex: true, view: 'exploded'},
+  {at: 71.0, click: '#btn-explode', ex: false, view: 'hero'},
+];
+const TOUR_LEN = 78, IDLE = 25;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const AP = {on: !reduceMotion, t0: 0, idx: -1};
+let lastInput = -1e9;
+const chip = document.getElementById('tourchip');
+const cursorEl = document.getElementById('cursor'), ringEl = document.getElementById('ring');
+let cur = {x: innerWidth * 0.5, y: innerHeight * 0.6};
+let tourSkin = null;
+function setChip() { chip.classList.toggle('on', AP.on); chip.querySelector('span').textContent = AP.on ? '自动巡览中 · 点任意处接管' : '手动模式 · 25 秒无操作后继续巡览'; }
+setChip();
+function startTour(now) { tourSkin = skinId; AP.on = true; AP.t0 = now; AP.idx = -1; setChip(); }
+function takeOver(now) { lastInput = now; if (AP.on) { AP.on = false; camMoving = false; cursorEl.style.opacity = 0; setChip(); } }
+let ring = {t: -9, x: 0, y: 0};
+function applyStep(st, now) {
+  if (st.iso) setIso(st.iso);
+  if (st.xray !== undefined) setXray(st.xray);
+  if (st.ex !== undefined) setExplode(st.ex);
+  if (st.view) goView(st.view, now);
+  if (st.skin) applySkin(st.skin === 'steel' && tourSkin ? tourSkin : st.skin);
+  if (st.click) { const el = document.querySelector(st.click); if (el) { const r = el.getBoundingClientRect(); ring = {t: now, x: r.left + r.width / 2, y: r.top + r.height / 2}; } }
+}
+function tourTick(now) {
+  const tau = now - AP.t0;
+  if (tau >= TOUR_LEN) { startTour(now); return; }
+  let i = -1; for (let k = 0; k < TOUR.length; k++) if (TOUR[k].at <= tau) i = k;
+  if (i !== AP.idx) { for (let k = AP.idx + 1; k <= i; k++) applyStep(TOUR[k], now); AP.idx = i; }
+  const next = TOUR.find(s => s.at > tau && s.click);
+  if (next && next.at - tau < 1.2) {
+    const el = document.querySelector(next.click);
+    if (el) {
+      const r = el.getBoundingClientRect(), tx = r.left + r.width / 2, ty = r.top + r.height / 2;
+      cur.x = lerp(cur.x, tx, 0.1); cur.y = lerp(cur.y, ty, 0.1);
+      cursorEl.style.opacity = r.bottom > 0 && r.top < innerHeight ? 1 : 0;
+    }
+  } else if (tau > 1) cursorEl.style.opacity = Math.max(0, Number(cursorEl.style.opacity || 0) - 0.02);
+  cursorEl.style.transform = `translate(${cur.x - 3}px, ${cur.y - 2}px)`;
+}
+
+/* ================================================================ inputs */
+let clock = 0, mtime = 0;
+for (const ev of ['pointerdown', 'wheel']) canvas.addEventListener(ev, () => takeOver(clock), {passive: true});
+addEventListener('keydown', () => takeOver(clock));
+chip.addEventListener('click', () => { if (AP.on) takeOver(clock); else { setIso('all'); startTour(clock); } });
+document.querySelectorAll('[data-sub]').forEach(b => b.addEventListener('click', () => {
+  takeOver(clock); setIso(b.dataset.sub); const v = SUBVIEW[b.dataset.sub]; if (v && S.Etgt === 0) goView(v, clock);
+}));
+document.querySelectorAll('[data-skin]').forEach(b => b.addEventListener('click', () => { takeOver(clock); applySkin(b.dataset.skin); }));
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => { takeOver(clock); goView(b.dataset.view, clock); }));
+document.getElementById('btn-xray').addEventListener('click', () => { takeOver(clock); setXray(!S.xray); if (S.Etgt === 0) goView(S.xray ? 'xside' : 'hero', clock); });
+document.getElementById('btn-explode').addEventListener('click', () => { takeOver(clock); setExplode(S.Etgt === 0); goView(S.Etgt ? 'exploded' : 'hero', clock); });
+const pauseBtn = document.getElementById('btn-pause');
+pauseBtn.addEventListener('click', () => { takeOver(clock); S.paused = !S.paused; pauseBtn.classList.toggle('on', S.paused); pauseBtn.textContent = S.paused ? '继续' : '暂停'; });
+const scrub = document.getElementById('scrub'), scrubOut = document.getElementById('scrubout');
+let scrubbing = false;
+scrub.addEventListener('input', () => { takeOver(clock); scrubbing = true; mtime = Number(scrub.value); });
+scrub.addEventListener('change', () => { scrubbing = false; });
+controls.addEventListener('start', () => takeOver(clock));
+
+/* ================================================================ the paddle: start and stop the shot by hand, like the real lever */
+const paddleBtn = document.getElementById('btn-paddle');
+function brewing() { return mtime >= T_ON - 0.4 && mtime < T_OFF - 0.4; }
+function togglePaddle() {
+  if (brewing()) mtime = T_OFF - 0.4;      // lever back: pump stops, the 3-way valve dumps the pressure
+  else mtime = T_ON - 0.4;                 // lever over: microswitch starts the pump and opens the brew valve
+  S.paused = false; pauseBtn.classList.remove('on'); pauseBtn.textContent = '暂停';
+}
+paddleBtn.addEventListener('click', () => { takeOver(clock); togglePaddle(); });
+// the two knobs turn clockwise to open (they neither pull out nor press in), back to the stop closes it
+const VALVE = {steam: {open: false, k: 0}, hot: {open: false, k: 0}};
+const knobBtn = {steam: document.getElementById('btn-steam'), hot: document.getElementById('btn-hot')};
+function toggleValve(key) {
+  VALVE[key].open = !VALVE[key].open;
+  knobBtn[key].classList.toggle('on', VALVE[key].open);
+  knobBtn[key].textContent = (key === 'steam' ? '蒸汽' : '热水') + (VALVE[key].open ? ' · 开' : ' · 关');
+}
+knobBtn.steam.addEventListener('click', () => { takeOver(clock); toggleValve('steam'); });
+knobBtn.hot.addEventListener('click', () => { takeOver(clock); toggleValve('hot'); });
+function setPI(v) {
+  PI = v; buildTables(); buildChart();
+  document.querySelectorAll('[data-pi]').forEach(b => b.classList.toggle('on', Number(b.dataset.pi) === v));
+}
+document.querySelectorAll('[data-pi]').forEach(b => b.addEventListener('click', () => { takeOver(clock); setPI(Number(b.dataset.pi)); }));
+// click the paddle itself in the 3D view
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let downAt = null;
+canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
+canvas.addEventListener('pointerup', (e) => {
+  if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  if (ray.intersectObjects(paddleMeshes, false).length) togglePaddle();
+  else if (ray.intersectObjects(KNOBS.steam.meshes, false).length) { takeOver(clock); toggleValve('steam'); }
+  else if (ray.intersectObjects(KNOBS.hot.meshes, false).length) { takeOver(clock); toggleValve('hot'); }
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (e.buttons) return;
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  canvas.style.cursor = ray.intersectObjects([...paddleMeshes, ...KNOBS.steam.meshes, ...KNOBS.hot.meshes], false).length ? 'pointer' : '';
+});
+
+/* ================================================================ HUD */
+const $ = (id) => document.getElementById(id);
+const el = {phase: $('phase'), phasetxt: $('phasetxt'), temp: $('vTemp'), time: $('vTime'), yld: $('vYield'), flow: $('vFlow'), heat: $('vHeat'), tank: $('vTank')};
+const css = getComputedStyle(document.documentElement);
+const C = {ink: css.getPropertyValue('--ink').trim(), ink2: css.getPropertyValue('--ink-2').trim(), rule: css.getPropertyValue('--rule').trim(), accent: css.getPropertyValue('--accent').trim(), card: css.getPropertyValue('--card').trim()};
+function drawDial(cv, v, max, majors, dec, hot) {
+  const g = cv.getContext('2d'), W = cv.width, R = W / 2 - 10;
+  g.clearRect(0, 0, W, W); g.save(); g.translate(W / 2, W / 2);
+  g.fillStyle = C.card; g.strokeStyle = C.ink; g.lineWidth = 4;
+  g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.fill(); g.stroke();
+  const a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, ang = (x) => a0 + (a1 - a0) * x / max;
+  for (let x = 0; x <= max + 1e-6; x += majors / 2) {
+    const a = ang(x), major = Math.abs(x / majors - Math.round(x / majors)) < 1e-6;
+    g.strokeStyle = major ? C.ink : C.ink2; g.lineWidth = major ? 3 : 1.6;
+    g.beginPath(); g.moveTo(Math.cos(a) * (R - 6), Math.sin(a) * (R - 6)); g.lineTo(Math.cos(a) * (R - (major ? 20 : 13)), Math.sin(a) * (R - (major ? 20 : 13))); g.stroke();
+    if (major) { g.fillStyle = C.ink; g.font = '600 19px "JetBrains Mono", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(Math.round(x * 10) / 10), Math.cos(a) * (R - 38), Math.sin(a) * (R - 38)); }
+  }
+  g.strokeStyle = C.accent; g.lineWidth = 5; g.beginPath(); g.arc(0, 0, R - 3, ang(0), ang(clamp(v, 0, max))); g.stroke();
+  const a = ang(clamp(v, 0, max));
+  g.strokeStyle = hot ? C.accent : C.ink; g.lineWidth = 4; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(-Math.cos(a) * 12, -Math.sin(a) * 12); g.lineTo(Math.cos(a) * (R - 22), Math.sin(a) * (R - 22)); g.stroke();
+  g.fillStyle = C.ink; g.beginPath(); g.arc(0, 0, 8, 0, Math.PI * 2); g.fill();
+  g.font = '600 26px "JetBrains Mono", monospace'; g.textAlign = 'center'; g.fillStyle = hot ? C.accent : C.ink;
+  g.fillText(v.toFixed(dec), 0, R * 0.52);
+  g.restore();
+}
+const chartCv = $('chart');
+const CH = {t0: -1, t1: 31};
+let chartPts = [];
+function buildChart() { chartPts = []; for (let s = CH.t0; s <= CH.t1; s += 0.1) chartPts.push([s, pressureAt(s + T_ON), tab(tabYield, s + T_ON)]); }
+buildChart();
+function drawChart(m) {
+  const g = chartCv.getContext('2d'), W = chartCv.width, H = chartCv.height;
+  const L = 46, R = 46, T = 12, B = 36, pw = W - L - R, ph = H - T - B;
+  const X = (s) => L + (s - CH.t0) / (CH.t1 - CH.t0) * pw, YP = (p) => T + ph - p / 10 * ph, YY = (y) => T + ph - y / 40 * ph;
+  g.clearRect(0, 0, W, H);
+  g.font = '18px "JetBrains Mono", monospace'; g.textBaseline = 'middle';
+  g.strokeStyle = C.rule; g.lineWidth = 1.5;
+  for (const p of [0, 3, 6, 9]) { g.beginPath(); g.moveTo(L, YP(p)); g.lineTo(L + pw, YP(p)); g.stroke(); g.fillStyle = C.accent; g.textAlign = 'right'; g.fillText(p, L - 8, YP(p)); }
+  g.fillStyle = C.ink2; g.textAlign = 'left';
+  for (const y of [0, 10, 20, 30, 40]) g.fillText(y, L + pw + 8, YY(y));
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  for (const s of [0, 5, 10, 15, 20, 25, 30]) g.fillText(s + 's', X(s), T + ph + 8);
+  const now = m.t >= T_ON - 1 ? Math.min(m.t - T_ON, CH.t1) : CH.t0;
+  const line = (col, w, idx, Y, upto) => { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); let first = true; for (const pt of chartPts) { if (pt[0] > upto) break; const x = X(pt[0]), y = Y(pt[idx]); first ? g.moveTo(x, y) : g.lineTo(x, y); first = false; } g.stroke(); };
+  g.globalAlpha = 0.25; line(C.accent, 2.5, 1, YP, CH.t1); line(C.ink, 2.5, 2, YY, CH.t1); g.globalAlpha = 1;
+  if (m.t >= T_ON - 1 && m.t < T_OFF + 6) {
+    line(C.accent, 4, 1, YP, now); line(C.ink, 4, 2, YY, now);
+    const s = clamp(now, CH.t0, CH.t1);
+    g.fillStyle = C.accent; g.beginPath(); g.arc(X(s), YP(pressureAt(s + T_ON)), 6, 0, Math.PI * 2); g.fill();
+    g.fillStyle = C.ink; g.beginPath(); g.arc(X(s), YY(tab(tabYield, s + T_ON)), 6, 0, Math.PI * 2); g.fill();
+  }
+}
+
+/* ================================================================ callouts */
+const labelsEl = $('labels'), leadersEl = $('leaders');
+const labEls = anchors.map(a => { const d = document.createElement('div'); d.className = 'lab'; d.innerHTML = `<b>${a.title}</b><span>${a.spec}</span>`; d.style.display = 'none'; labelsEl.appendChild(d); return d; });
+const tmpV = new THREE.Vector3();
+function drawLabels(W, H) {
+  const wantAll = S.iso === 'all' && (S.xray || S.E > 0.6);
+  const small = W < 600;
+  let svg = '';
+  const placed = [], todo = [];
+  anchors.forEach((a, i) => {
+    let show = S.iso !== 'all' ? a.subs.includes(S.iso) : (wantAll && a.subs.includes('all'));
+    if (small && S.iso !== 'all' && a.subs[0] !== S.iso) show = false;
+    const d = labEls[i];
+    if (!show) { d.style.display = 'none'; return; }
+    tmpV.copy(a.pos).add(a.p.obj.position).project(camera);
+    if (tmpV.z > 1) { d.style.display = 'none'; return; }
+    d.style.display = 'block';
+    todo.push({d, x: (tmpV.x * 0.5 + 0.5) * W, y: (-tmpV.y * 0.5 + 0.5) * H, w: d.offsetWidth, h: d.offsetHeight});
+  });
+  todo.sort((a, b) => a.y - b.y);
+  for (const L of todo) {
+    const side = L.x > W * 0.5 ? 1 : -1;
+    const lx = clamp(L.x + side * (small ? 46 : 74), L.w / 2 + 8, W - L.w / 2 - 8);
+    let ly = clamp(L.y - (small ? 30 : 46), L.h + 8, H - 8);
+    for (let guard = 0; guard < 12; guard++) {
+      const hit = placed.find(r => Math.abs(r.x - lx) < (r.w + L.w) / 2 + 6 && ly - L.h < r.y + 6 && ly > r.y - r.h - 6);
+      if (!hit) break;
+      ly = hit.y - hit.h - 8;
+      if (ly < L.h + 8) ly = hit.y + L.h + 8;
+    }
+    placed.push({x: lx, y: ly, w: L.w, h: L.h});
+    L.d.style.left = lx + 'px'; L.d.style.top = ly + 'px';
+    svg += `<line x1="${L.x.toFixed(1)}" y1="${L.y.toFixed(1)}" x2="${lx.toFixed(1)}" y2="${(ly - 2).toFixed(1)}" stroke="${C.ink}" stroke-width="1"/><circle cx="${L.x.toFixed(1)}" cy="${L.y.toFixed(1)}" r="3" fill="${C.accent}"/>`;
+  }
+  leadersEl.innerHTML = svg;
+}
+
+/* ================================================================ frame */
+const Vtmp = new THREE.Vector3(), mtx = new THREE.Matrix4(), q0 = new THREE.Quaternion(), sc = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1);
+function explodeOffset(p, E, out) {
+  const u = clamp((E * 1.25 - p.delay) / 0.45, 0, 1), n = p.path.length;
+  out.set(0, 0, 0);
+  for (let i = 0; i < n; i++) { const k = ease(clamp(u * n - i, 0, 1)); out.x += p.path[i][0] * k; out.y += p.path[i][1] * k; out.z += p.path[i][2] * k; }
+  return out;
+}
+function resize() {
+  const r = view.getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / r.height;
+  camera.fov = r.width < 700 ? 40 : 30;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+const partOf = (pred) => parts.find(pred);
+const P_STEAM = partOf(p => p.sub === 'steam'), P_WATER = partOf(p => p.sub === 'water'), P_PF = partOf(p => p.sub === 'pf'), P_WAND = partOf(p => p.isSteam), P_GROUP = partOf(p => p.sub === 'group');
+function beadsAlong(B, curve, len, dist, part) {
+  for (let k = 0; k < B.count; k++) {
+    curve.getPointAt(((k / B.count) + dist / len) % 1, Vtmp);
+    if (part) Vtmp.add(part.obj.position);
+    mtx.compose(Vtmp, q0, one); B.setMatrixAt(k, mtx);
+  }
+  B.instanceMatrix.needsUpdate = true;
+}
+
+let last = performance.now() / 1000, hudTick = 0;
+function frame(nowMs) {
+  const now = nowMs / 1000, dt = clamp(now - last, 0, 0.05); last = now; clock = now;   // rAF's first stamp can predate the load clock
+  if (!S.paused && !scrubbing) mtime = (mtime + dt) % CYCLE;
+  const m = model(mtime);
+  for (const key of ['steam', 'hot']) { const V = VALVE[key]; V.k = S.instant ? +V.open : clamp(V.k + (V.open ? 1 : -1) * dt / 0.35, 0, 1); }
+  const manSteam = VALVE.steam.k, manHot = VALVE.hot.k;
+  m.steamK = Math.max(m.steamK, manSteam);
+  if (manSteam > 0.05 || manHot > 0.05) {
+    m.sb = Math.max(0.6, m.sb - 0.35 * manSteam - 0.12 * manHot);
+    m.steamHeat = true;
+    m.phase = manSteam > 0.05 ? (manHot > 0.05 ? '蒸汽棒出汽 + 热水嘴出水' : '蒸汽棒出汽') : '热水嘴出水';
+    m.active = true;
+  }
+  m.hotK = manHot;
+  if (AP.on) tourTick(now); else if (now - lastInput > IDLE && !reduceMotion) { setIso('all'); startTour(now); }
+
+  S.E = S.instant ? S.Etgt : clamp(S.E + Math.sign(S.Etgt - S.E) * dt / 3.2, 0, 1);
+  for (const p of parts) explodeOffset(p, S.E, p.obj.position);
+  const pipeFade = 1 - sm(0, 0.1, S.E);
+
+  XR.k = S.instant ? (S.xray ? 1 : 0) : clamp(XR.k + (S.xray ? 1 : -1) * dt / 0.5, 0, 1);
+  scene.background.lerpColors(BG_SOLID, BG_XRAY, XR.k);
+  floor.material.opacity = 0.16 - 0.08 * XR.k;
+  if (S.xray && !XR.built) buildXray();
+  const xMode = S.xray;
+  for (const mesh of meshes) {
+    const p = mesh.userData.part;
+    const isoHit = S.iso === 'all' || p.rel.includes(S.iso);
+    let o;
+    if (xMode) {
+      // x-ray: every part is glass with its outline; the chosen subsystem stays dark, the rest goes faint
+      o = isoHit ? 1 : 0.16;
+      if (p.sub === 'pipe') o *= pipeFade;
+      if (mesh.userData.hide) o = 0;
+    } else {
+      o = mesh.userData.base;
+      if (!isoHit) o = Math.min(o, 0.06);
+      if (p.shell && S.iso !== 'all') o = Math.min(o, 0.05);
+      // knobs, paddle and lights stay solid: they are the controls the visitor is looking for
+      if (mesh.userData.solid && (S.iso === 'all' || S.iso === mesh.userData.solid)) o = mesh.userData.base;
+      if (p.sub === 'pipe') o = Math.min(o, pipeFade * (isoHit ? 1 : 0.06));
+      if (p.glass && p.glass.includes(mesh) && S.iso === p.sub) o = 0.22;
+      if (mesh.userData.inner && S.iso !== p.sub) o = 0;
+      if (mesh.userData.hide) o = 0;
+    }
+    if (mesh.userData.xmode !== xMode) { mesh.userData.xmode = xMode; mesh.userData.op = o; mesh.material = xMode ? mesh.userData.xm : mesh.userData.sm; if (mesh.userData.lines) mesh.userData.lines.visible = xMode; }
+    const op = mesh.userData.op = S.instant ? o : lerp(mesh.userData.op, o, Math.min(1, dt * 8));
+    const mat = mesh.material;
+    if (xMode) {
+      mat.opacity = op * mesh.userData.xo;
+      if (mesh.userData.lines) mesh.userData.lines.material.opacity = op * mesh.userData.lo;
+      mesh.visible = op > 0.01;
+      mesh.castShadow = op > 0.5 && p.sub !== 'pipe' && !mesh.userData.inner;
+      continue;
+    }
+    mat.opacity = op;
+    const tr = op < 0.995;
+    if (mat.transparent !== tr) { mat.transparent = tr; mat.needsUpdate = true; }
+    mat.depthWrite = op > 0.5;
+    mesh.visible = op > 0.01;
+    mesh.castShadow = op > 0.5 && p.sub !== 'pipe';
+  }
+  if (XR.built) {
+    // heat shows as red, brighter while the element is on
+    const glow = 0.5 + 0.5 * Math.sin(now * 3);
+    for (const mesh of XR.heatMeshes) {
+      const h = mesh.userData.heat, on = h === 'element' ? (mesh === cartridge ? m.coffeeHeat : m.steamHeat) : true;
+      if (h === 'element') mesh.userData.xm.color.setHex(on ? 0xff2a12 : 0xb54a3c);
+      if (h === 'steam') mesh.userData.xo = 0.36 + (m.steamHeat ? 0.12 * glow : 0);
+    }
+  }
+  // the knobs, paddle and LEDs live on the top box but belong to the controls: keep them solid
+  paddle.rotation.y = ease(m.paddle) * 0.6;   // rests centred, swings right to brew
+  paddle.children.forEach(c => { if (c.userData.xm) c.userData.xm.color.setHex(m.paddle > 0.5 ? 0xd2381c : 0x2f343a); });
+  fan.rotation.x = m.rotor;
+  KNOBS.steam.g.rotation.z = -ease(m.steamK) * Math.PI / 2;   // clockwise seen from the front
+  KNOBS.hot.g.rotation.z = -ease(m.hotK) * Math.PI / 2;
+  {
+    const P_HOT = parts.find(p => p.sub === 'wand' && !p.isSteam);
+    const top = 169 + P_HOT.obj.position.y, bot = 69 + P_WATER.obj.position.y, len = top - bot;
+    hotStream.visible = m.hotK > 0.05 && S.E < 0.02 && ['all', 'wand', 'water'].includes(S.iso) && len > 1;
+    const r = 1.6 * m.hotK + 0.4;
+    hotStream.scale.set(r, len, r); hotStream.position.set(-112, bot + len / 2, 101 + P_HOT.obj.position.z);
+  }
+  for (const G of GAUGES) G.needle.rotation.z = gaugeAngle(G.key === 'brew' ? m.p : m.sb, G.max);
+  element.userData.sm.emissiveIntensity = m.steamHeat ? 0.9 : 0;
+  cartridge.userData.sm.emissiveIntensity = m.coffeeHeat ? 0.9 : 0.15;
+  steamWater.userData.sm.clippingPlanes[0].constant = m.steamLevel + P_STEAM.obj.position.y;
+  const lvl = clamp(m.tank / 1500, 0.08, 1);
+  tankWater.scale.y = lvl; tankWater.position.y = 15 + 44 * lvl / 2;
+  const h = m.yield * 0.4;
+  cupLiquid.visible = crema.visible = m.yield > 0.2 && cupLiquid.userData.op > 0.01;
+  cupLiquid.scale.y = Math.max(0.01, h); cupLiquid.position.y = 74 + h / 2; crema.position.y = 74 + h + 0.3;
+  for (const s of streams) {
+    const top = 144 + P_PF.obj.position.y, bot = 74 + h + P_WATER.obj.position.y, len = top - bot;
+    s.visible = m.yRate > 0.03 && S.E < 0.02 && ['all', 'pf', 'group', 'water', 'paddle'].includes(S.iso) && len > 1;
+    const r = 0.7 + Math.sqrt(m.yRate) * 0.85;
+    s.scale.set(r, len, r); s.position.y = bot + len / 2;
+  }
+  const beadsOn = S.E < 0.02 && (S.xray || S.iso !== 'all');
+  for (const P of PIPES) {
+    let dist = 0, on = false;
+    if (P.key === 'feed') { dist = m.feed; on = m.flow > 0.1; }
+    else if (P.key === 'brew') { dist = m.brew; on = m.t >= T_ON && m.t < T_OFF; }
+    else if (P.key === 'steam') { dist = m.steam + (manSteam > 0.05 ? now * 160 : 0); on = m.steamK > 0.05; }
+    else if (P.key === 'hot') { dist = now * 120; on = m.hotK > 0.05; }
+    else if (P.key === 'drain') { dist = m.drain; on = m.t >= T_OFF && m.t < T_OFF + 1.4; }
+    P.beads.visible = on && beadsOn && (S.iso === 'all' || P.rel.includes(S.iso));
+    if (P.beads.visible) beadsAlong(P.beads, P.curve, P.len, dist, null);
+  }
+  COIL.beads.visible = m.flow > 0.1 && beadsOn && ['all', 'steam', 'pump'].includes(S.iso);
+  if (COIL.beads.visible) beadsAlong(COIL.beads, COIL.curve, COIL.len, m.feed, P_STEAM);
+  puffs.visible = m.steamK > 0.01 && (S.iso === 'all' || S.iso === 'wand');
+  if (puffs.visible) {
+    const tip = Vtmp.copy(steamTip).add(P_WAND.obj.position);
+    for (let i = 0; i < PUFFS; i++) {
+      const [a, b, c] = puffSeed[i], age = ((manSteam > 0.05 ? now : m.t) * 1.7 + c) % 1;
+      const r = (3 + age * 20) * Math.sin(Math.PI * age) * m.steamK;
+      mtx.compose(sc.set(tip.x + a * age * 36, tip.y - 8 - age * 70 + age * age * 110, tip.z + 8 + b * age * 36 + age * 36), q0, new THREE.Vector3(r, r, r));
+      puffs.setMatrixAt(i, mtx);
+    }
+    puffs.instanceMatrix.needsUpdate = true;
+  }
+  const dk = m.t >= T_OFF && m.t < T_OFF + 1.4 ? 1 - sm(T_OFF + 0.9, T_OFF + 1.4, m.t) : 0;
+  drainPuffs.visible = dk > 0 && S.E < 0.02 && (S.xray || S.iso === 'group' || S.iso === 'water' || S.iso === 'paddle');
+  if (drainPuffs.visible) {
+    for (let i = 0; i < 24; i++) {
+      const age = (m.t * 3 + i / 24) % 1;
+      mtx.compose(sc.set(-100 + Math.sin(i * 2.3) * 6 * age, 66 - age * 20, 28 + Math.cos(i * 1.7) * 6 * age), q0, new THREE.Vector3(2.3 * dk, 2.3 * dk, 2.3 * dk));
+      drainPuffs.setMatrixAt(i, mtx);
+    }
+    drainPuffs.instanceMatrix.needsUpdate = true;
+  }
+
+  if (camMoving) {
+    const k = S.instant ? 1 : ease(clamp((now - camT0) / camDur, 0, 1));
+    camera.position.lerpVectors(camFrom.pos, camTo.pos, k);
+    controls.target.lerpVectors(camFrom.tgt, camTo.tgt, k);
+    if (k >= 1) camMoving = false;
+  }
+  if (camMoving) camera.lookAt(controls.target); else controls.update();
+
+  renderer.render(scene, camera);
+  const r = view.getBoundingClientRect();
+  drawLabels(r.width, r.height);
+  const rk = (now - ring.t) / 0.6;
+  ringEl.style.opacity = rk < 1 ? String(1 - rk) : '0';
+  if (rk < 1) { ringEl.style.left = ring.x + 'px'; ringEl.style.top = ring.y + 'px'; ringEl.style.transform = `scale(${0.6 + rk * 0.9})`; }
+
+  if ((hudTick++ & 1) === 0) {
+    el.phasetxt.textContent = m.phase; el.phase.classList.toggle('on', m.active);
+    el.temp.textContent = m.temp.toFixed(1) + ' °C';
+    el.time.textContent = m.shotT.toFixed(1) + ' s';
+    el.yld.textContent = m.yield.toFixed(1) + ' g';
+    el.flow.textContent = m.flow.toFixed(1) + ' ml/s'; el.flow.classList.toggle('hot', m.flow > 0.1);
+    const heat = [m.steamHeat && '蒸汽锅炉', m.coffeeHeat && '咖啡锅炉'].filter(Boolean).join(' + ');
+    el.heat.textContent = heat || '保温'; el.heat.classList.toggle('hot', !!heat);
+    el.tank.textContent = Math.round(m.tank) + ' ml';
+    paddleBtn.textContent = m.paddle > 0.5 ? '拨杆 · 停止萃取' : '拨杆 · 开始萃取'; paddleBtn.classList.toggle('on', m.paddle > 0.5);
+    drawDial($('dialBrew'), m.p, 16, 4, 1, m.p > 0.5);
+    drawDial($('dialSteam'), m.sb, 3, 1, 2, m.steamK > 0.05);
+    drawChart(m);
+    if (!scrubbing) scrub.value = m.t.toFixed(2);
+    scrubOut.textContent = m.t.toFixed(1) + ' s';
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__sim = {toggleValve: (k) => toggleValve(k), goView2: (pos, tgt) => { VIEWS.__t = {pos, tgt}; goView('__t', performance.now() / 1000); }, model, S, setIso, setXray, setExplode, goView, applySkin, setPI, togglePaddle, get mtime() { return mtime; }, set mtime(v) { mtime = v; }, takeOver: () => takeOver(clock), parts};
+</script>
+
+</body>
+</html>
