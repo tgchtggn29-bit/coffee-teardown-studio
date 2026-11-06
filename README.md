@@ -1,17 +1,24 @@
 # 咖啡机拆解工作台 · Coffee Teardown Studio
 
+## ▶ [立即在线体验](https://tgchtggn29-bit.github.io/coffee-teardown-studio/)
+
+**演示地址 / Live demo：<https://tgchtggn29-bit.github.io/coffee-teardown-studio/>**
+
+> 免安装、免下载，浏览器打开就能拆。建议用电脑端 Chrome / Edge 全屏体验；手机可以打开，但拆解和透视操作不方便。
+
 可拆解、可透视、可操作的意式咖啡机三维模拟器，纯前端、单页 HTML，打开即用。
 
 目前收录两台 La Marzocco 家用机：**Linea Micra** 和 **Linea Mini R**。
 
 ![工作台](docs/screenshots/workbench.png)
 
-## 在线演示
+## 在线体验
 
-开启 GitHub Pages 后访问：`https://tgchtggn29-bit.github.io/coffee-teardown-studio/`
+**在线工作台：<https://tgchtggn29-bit.github.io/coffee-teardown-studio/>**
 
 - 工作台：`index.html`，左侧选机型，右侧直接操作
-- 单独打开：`sims/linea-micra.html`、`sims/linea-mini-r.html`
+- 单独打开一台机器：<https://tgchtggn29-bit.github.io/coffee-teardown-studio/sims/linea-micra.html> · <https://tgchtggn29-bit.github.io/coffee-teardown-studio/sims/linea-mini-r.html>
+- 已开启 GitHub Pages，推送到 `main` 会自动重新部署
 
 ## 能做什么
 
@@ -55,9 +62,9 @@ python3 -m http.server 8000
 
 three.js 已放在 `vendor/three/`，不依赖外部 CDN，断网也能用（只有字体会回退到系统字体）。
 
-## 开启 GitHub Pages
+## 部署
 
-仓库 Settings → Pages → Build and deployment，Source 选 **Deploy from a branch**，Branch 选 `main` / `/ (root)`，保存后一两分钟即可访问。
+已配置 GitHub Pages：源为 `main` 分支 `/ (root)`，推送到 `main` 后自动构建发布，一到两分钟生效。仓库里的 `.nojekyll` 用于关闭 Jekyll 处理，保证 `sims/`、`vendor/` 原样发布。
 
 ## 目录
 
