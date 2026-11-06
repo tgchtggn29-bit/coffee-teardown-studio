@@ -76,6 +76,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 button.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
 .sw{display:inline-flex;align-items:center;gap:6px;padding:4px 9px 4px 5px}
 .sw i{width:16px;height:16px;border:1px solid rgba(0,0,0,.25);display:inline-block;flex:none}
+.hsw{display:inline-flex;align-items:center;gap:6px;margin-left:6px}
+.lbl2{font-size:11px;color:var(--ink-2)}
 .sw.on{background:var(--card);color:var(--ink);border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .scrub{display:flex;align-items:center;gap:10px}
 .scrub input{flex:1;accent-color:var(--accent);min-width:0}
@@ -452,8 +454,8 @@ function anchor(p, pos, title, spec, subs) { anchors.push({p, pos: new THREE.Vec
    Axes: x to the right, y up, z toward the front. The main body's front face is z = 0; the head box sticks out in front of it.
    Overall 290 wide, 335 high, 395 deep at the base (drip tray front to the back foot), drip tray 270 wide. */
 const GZ = 60;        // group axis
-const KY_V = 238;     // height of the knobs and their valves
-const HB = {x: 133, y0: 200, y1: 322, z1: 126};   // head box
+const KY_V = 251;     // height of the knobs and their valves
+const HB = {x: 133, y0: 215, y1: 322, z1: 126};   // head box
 const BODY = {x: 145, y0: 70, y1: 335, zTop: -309, zBot: -254};
 
 /* ---------------------------------------------------------------- base plinth (black) with the feet, switch and plug; holds the tank */
@@ -554,6 +556,10 @@ const GAUGES = [{key: 'brew', x: -84, max: 18, major: 3, minor: 1, red: [8, 10]}
   // the body's front above the gauges, hidden behind the head box
   const upper = skin(boxMM(-142, 142, HB.y0, 322, -3, 0, MAT.paint), 'body');
   const objs = [plate, upper];
+  // the dark louvred band above the drip tray, with its two screws
+  objs.push(boxMM(-122, 122, 84, 108, -1, 1.2, std(0x1a1b1d, 0.3, 0.5), 2));
+  for (let y = 88; y <= 104; y += 4) objs.push(boxMM(-112, 112, y - 0.8, y + 0.8, 1.2, 2.2, std(0x2c2e31, 0.4, 0.4)));
+  for (const x of [-94, 94]) objs.push(cylZ(3.4, 1.2, 3.4, x, 96, MAT.steel, 16));
   for (const G of GAUGES) {
     const face = new THREE.Mesh(new THREE.CircleGeometry(GR, 48), new THREE.MeshStandardMaterial({map: makeGaugeTexture(G.max, G.major, G.minor, G.red), roughness: 0.4}));
     face.position.set(G.x, GY, 1);
@@ -572,20 +578,61 @@ const GAUGES = [{key: 'brew', x: -84, max: 18, major: 3, minor: 1, red: [8, 10]}
   anchor(pp, [84, 162, 4], '蒸汽压力表', '0–3 bar', ['steam']);
 }
 
-/* ---------------------------------------------------------------- head box: front panel C.1.660 and group cover C.1.661, knobs, the paddle module */
+/* ---------------------------------------------------------------- head box: front panel C.1.660 and group cover C.1.661, knobs, the paddle module (matched to the front product photo) */
 let paddle, paddleMeshes = [], stripeMeshes = [];
-const KNOBS = {};      // steam (right) and hot water (left): each turns about its own axis
-function knob(x, y, z0) {
-  const len = 46, r = 18, g = new THREE.Group();
-  g.add(cylZ(21, z0, z0 + 5, 0, 0, MAT.plastic, 32), cylZ(r, z0 + 5, z0 + len - 4, 0, 0, MAT.plastic, 32));
-  for (let i = 0; i < 12; i++) {                     // the fluted grip
-    const a = i / 12 * Math.PI * 2, cx = Math.cos(a) * (r + 0.6), cy = Math.sin(a) * (r + 0.6);
-    g.add(boxMM(cx - 1.7, cx + 1.7, cy - 1.7, cy + 1.7, z0 + 9, z0 + len - 9, MAT.plastic));
+const KNOBS = {};      // steam (right) and hot water (left): each turns clockwise about its own axis
+const ICONS = {};
+function capTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(110, 100, 10, 128, 128, 128);
+  grd.addColorStop(0, '#f7f7f5'); grd.addColorStop(1, '#c9ccd0');
+  g.fillStyle = grd; g.beginPath(); g.arc(128, 128, 128, 0, Math.PI * 2); g.fill();
+  g.translate(128, 128);
+  // the model name printed round the rim, twice
+  g.fillStyle = '#2a2d31'; g.font = '700 26px "Barlow Condensed", Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  const word = 'MICRA  ·  MICRA  ·  ';
+  for (let i = 0; i < word.length; i++) {
+    const a = -Math.PI / 2 + (i / word.length) * Math.PI * 2;
+    g.save(); g.rotate(a + Math.PI / 2); g.translate(0, -96); g.fillText(word[i], 0, 0); g.restore();
   }
-  g.add(cylZ(16.5, z0 + len - 4, z0 + len, 0, 0, MAT.steel, 32));                 // silver end cap
-  g.add(boxMM(-1.2, 1.2, 6, 14, z0 + len, z0 + len + 0.9, MAT.steelDark));       // the index mark shows how far it is open
+  g.strokeStyle = '#8a8f95'; g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 76, 0, Math.PI * 2); g.stroke();
+  // a clockwise arrow in the middle: turn this way to open
+  g.strokeStyle = '#3a3e43'; g.lineWidth = 9; g.lineCap = 'round';
+  g.beginPath(); g.arc(0, 0, 40, -Math.PI * 0.75, Math.PI * 0.6); g.stroke();
+  const ax = Math.cos(Math.PI * 0.6) * 40, ay = Math.sin(Math.PI * 0.6) * 40;
+  g.fillStyle = '#3a3e43'; g.beginPath(); g.moveTo(ax - 18, ay - 4); g.lineTo(ax + 6, ay + 16); g.lineTo(ax + 10, ay - 14); g.closePath(); g.fill();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const CAP_TEX = capTexture();
+function knob(x, y, z0) {
+  const g = new THREE.Group();
+  const black = std(0x121314, 0.3, 0.28);
+  g.add(cylZ(22, z0, z0 + 6, 0, 0, black, 40));                              // collar on the panel
+  const body = cylZ(19.5, z0 + 6, z0 + 36, 0, 0, black, 8); g.add(body);   // eight-sided grip
+  for (let i = 0; i < 8; i++) {                                                 // raised facets with notches, as in the photo
+    const a = (i + 0.5) / 8 * Math.PI * 2, cx = Math.cos(a) * 19.8, cy = Math.sin(a) * 19.8;
+    const f = boxMM(-3.2, 3.2, -2, 2, z0 + 10, z0 + 33, black, 1);
+    f.position.set(cx, cy, f.position.z); f.rotation.z = a + Math.PI / 2; g.add(f);
+  }
+  g.add(cylZ(18, z0 + 36, z0 + 40, 0, 0, MAT.steel, 40));                     // bevelled metal rim
+  const face = new THREE.Mesh(new THREE.CircleGeometry(16.5, 48), new THREE.MeshStandardMaterial({map: CAP_TEX, roughness: 0.35, metalness: 0.2}));
+  face.position.set(0, 0, z0 + 40.2); g.add(face);
   g.position.set(x, y, 0);
   return g;
+}
+function iconTexture(kind) {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#0d0e10'; g.fillRect(0, 0, 128, 128);
+  g.strokeStyle = g.fillStyle = '#e8eaec'; g.lineWidth = 9; g.lineCap = 'round';
+  if (kind === 'drop') {
+    g.beginPath(); g.moveTo(64, 26); g.bezierCurveTo(80, 50, 92, 64, 92, 78); g.arc(64, 78, 28, 0, Math.PI); g.bezierCurveTo(36, 64, 48, 50, 64, 26); g.stroke();
+  } else {
+    g.beginPath(); g.arc(64, 70, 28, -Math.PI * 0.32, Math.PI * 1.32); g.stroke();
+    g.beginPath(); g.moveTo(64, 28); g.lineTo(64, 66); g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 {
   const front = skin(boxMM(-HB.x, HB.x, HB.y0, HB.y1, HB.z1 - 6, HB.z1, MAT.paint, 2), 'body');
@@ -595,10 +642,10 @@ function knob(x, y, z0) {
   const hole = new THREE.Path(); hole.absarc(0, GZ, 48, 0, Math.PI * 2, true); bs.holes.push(hole);
   const bottom = skin(new THREE.Mesh(new THREE.ExtrudeGeometry(bs, {depth: 3, bevelEnabled: false, curveSegments: 32}), MAT.paint), 'body');
   bottom.rotation.x = Math.PI / 2; bottom.position.y = HB.y0 + 3;
-  // stainless brackets tying the head box to the body, and the screws on top (photo 3)
-  const brackets = [-1, 1].map(s => boxMM(s > 0 ? HB.x : -HB.x - 2, s > 0 ? HB.x + 2 : -HB.x, HB.y0 + 8, HB.y1 - 4, 0, 24, MAT.steel));
+  // front-facing stainless flanges either side of the head, two screws each (front photo)
+  const brackets = [-1, 1].map(s => boxMM(s > 0 ? HB.x : -146, s > 0 ? 146 : -HB.x, HB.y0 - 4, 330, 0, 6, MAT.steel, 1));
   const bScrews = [];
-  for (const s of [-1, 1]) for (const y of [205, 290]) bScrews.push(cylX(3, s > 0 ? HB.x + 2 : -HB.x - 3.5, s > 0 ? HB.x + 3.5 : -HB.x - 2, y, 12, MAT.steelDark, 16));
+  for (const s of [-1, 1]) for (const y of [HB.y0 + 12, 314]) bScrews.push(cylZ(3.2, 6, 7.6, s * 139.5, y, MAT.steelDark, 16));
   const tScrews = [];
   for (const x of [-118, 118]) for (const z of [12, 112]) tScrews.push(cylY(3, HB.y1, HB.y1 + 1.4, x, z, MAT.steelDark, 16));
   for (const [y0, y1, col] of [[300, 310, 0x1e3c78], [292, 300, 0xc4271f], [287, 292, 0x4d7fc0]]) {
@@ -606,37 +653,53 @@ function knob(x, y, z0) {
     stripeMeshes.push(boxMM(-HB.x + 2, HB.x - 2, y0, y1, HB.z1, HB.z1 + 1.2, mat),
       boxMM(-HB.x - 1.2, -HB.x, y0, y1, 26, HB.z1 - 2, mat), boxMM(HB.x, HB.x + 1.2, y0, y1, 26, HB.z1 - 2, mat));
   }
-  // steam (right) and hot water (left) valves B.2.040 with fluted knobs F.1.231
+  // steam (right) and hot water (left) valves B.2.040 with knobs F.1.231
   const KY = KY_V, knobs = [], valves = [];
   for (const sx of [-1, 1]) {
-    const k = knob(sx * 100, KY, HB.z1); knobs.push(k);
+    const k = knob(sx * 107, KY, HB.z1); knobs.push(k);
     KNOBS[sx > 0 ? 'steam' : 'hot'] = {g: k, meshes: k.children};
-    valves.push(cylZ(13, 72, HB.z1 - 6, sx * 100, KY, MAT.brass, 20), boxMM(sx * 100 - 11, sx * 100 + 11, KY - 11, KY + 11, 60, 72, MAT.brass, 2));
+    valves.push(cylZ(13, 72, HB.z1 - 6, sx * 107, KY, MAT.brass, 20), boxMM(sx * 107 - 11, sx * 107 + 11, KY - 11, KY + 11, 60, 72, MAT.brass, 2));
   }
-  // paddle module: a black wedge (front frame C.2.067) with the heating light at its left and the tank light at its right end
-  const PY = 252, ps = new THREE.Shape([[HB.z1, PY - 14], [HB.z1 + 32, PY - 10], [HB.z1 + 35, PY + 6], [HB.z1, PY + 22]].map(([z, y]) => new THREE.Vector2(z, y)));
-  const wedge = new THREE.Mesh(new THREE.ExtrudeGeometry(ps, {depth: 108, bevelEnabled: true, bevelThickness: 2, bevelSize: 2, bevelSegments: 2}), std(0x111214, 0.25, 0.22));
-  wedge.rotation.y = -Math.PI / 2; wedge.position.x = 54;
-  const glassHeat = boxMM(-46, -20, PY - 6, PY + 2, HB.z1 + 33, HB.z1 + 36.5, MAT.led, 2);
-  const glassTank = boxMM(50, 56, PY - 4, PY + 6, HB.z1 + 14, HB.z1 + 28, MAT.ledRed, 2);
-  // paddle handle C.2.068 on lever C.1.666: a vertical blade standing in front of the wedge, pivoting about a vertical axis
+  // paddle module (front frame C.2.067): a wide black housing between the knobs, stepped louvres on its face,
+  // a water-drop window at the left end and a power window at the right end
+  const PY = 254, Z0 = HB.z1, gloss = std(0x0f1012, 0.35, 0.18);
+  const housing = boxMM(-70, 70, PY - 14, PY + 14, Z0, Z0 + 22, gloss, 7);
+  const lip = boxMM(-64, 64, PY - 19, PY - 13, Z0, Z0 + 18, std(0x18191b, 0.3, 0.3), 3);
+  const louvres = [];
+  for (let i = 0; i < 4; i++) {
+    const y = PY - 9 + i * 5.6, out = 2.6 - i * 0.5;           // each slat steps back a little, like the photo
+    louvres.push(boxMM(-46, 44, y - 1.6, y + 1.6, Z0 + 21, Z0 + 22 + out, gloss, 1.2));
+  }
+  const tile = (x, kind, emis) => {
+    const t = iconTexture(kind);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.MeshStandardMaterial({map: t, emissiveMap: t, emissive: emis, emissiveIntensity: 0.2, roughness: 0.3}));
+    m.position.set(x, PY, Z0 + 22.6); return m;
+  };
+  const frames = [-58, 58].map(x => boxMM(x - 8, x + 8, PY - 8, PY + 8, Z0 + 20, Z0 + 22.4, std(0x050506, 0.2, 0.2), 2));
+  ICONS.drop = tile(-58, 'drop', 0xff4a35);      // tank empty
+  ICONS.power = tile(58, 'power', 0x9cc8ff);     // on / heating
+  // the paddle (lever C.1.666 + handle C.2.068): a throttle-style lever standing in a slot right of centre,
+  // a flat stem that runs below the housing, a T-grip on top; it rests straight and swings right to brew
   paddle = new THREE.Group();
-  const blade = boxMM(-4.5, 4.5, -38, 20, 0, 40, std(0x111214, 0.25, 0.3), 4);
-  const hub = cylY(4, -16, 16, 0, 0, MAT.plastic, 16);
-  paddle.add(blade, hub); paddle.position.set(0, PY, HB.z1 + 39);
-  paddleMeshes = [blade, hub, wedge];
-  const switchBox = boxMM(-6, 20, PY - 4, PY + 12, 108, 118, MAT.plastic, 2);   // microswitch E.2.111 behind the paddle
+  const stem = boxMM(-9, 9, PY - 39 - PY, 16, 10, 28, gloss, 3);
+  const neck = boxMM(-6, 6, 12, 18, 6, 26, gloss, 2);
+  const grip = boxMM(-19, 19, 17, 26, 2, 32, gloss, 4);
+  grip.rotation.x = -0.12;
+  paddle.add(stem, neck, grip); paddle.position.set(24, PY, Z0 + 8);
+  paddleMeshes = [stem, neck, grip, housing];
+  const switchBox = boxMM(14, 34, PY - 4, PY + 12, 108, 118, MAT.plastic, 2);   // microswitch E.2.111 behind the lever
   // barista lights E.1.034 under the head box
   const bLights = [-1, 1].map(s => boxMM(s * 58 - 16, s * 58 + 16, HB.y0 - 1.5, HB.y0, 96, 110, MAT.led, 1));
   [...knobs.flatMap(k => k.children), ...valves].forEach(m => m.userData.solid = 'wand');
-  [wedge, glassHeat, glassTank, blade, hub, switchBox].forEach(m => m.userData.solid = 'paddle');
-  const pt = unit('top', [front, ...sides, top, bottom, ...brackets, ...bScrews, ...tScrews, ...stripeMeshes, ...knobs, ...valves, wedge, glassHeat, glassTank, paddle, switchBox, ...bLights],
+  [housing, lip, ...louvres, ...frames, ICONS.drop, ICONS.power, stem, neck, grip, switchBox].forEach(m => m.userData.solid = 'paddle');
+  const pt = unit('top', [front, ...sides, top, bottom, ...brackets, ...bScrews, ...tScrews, ...stripeMeshes, ...knobs, ...valves,
+    housing, lip, ...louvres, ...frames, ICONS.drop, ICONS.power, paddle, switchBox, ...bLights],
     {path: [[0, 430, 0]], delay: 0.2, rel: ['shell', 'paddle']});
-  anchor(pt, [0, PY + 20, HB.z1 + 60], '冲煮拨杆', '竖直拨片 · 待机回正，向右扳开始萃取', ['paddle', 'group']);
-  anchor(pt, [-33, PY - 2, HB.z1 + 36], '加热指示', '蓝灯 · 锅炉加热中', ['paddle']);
-  anchor(pt, [53, PY + 1, HB.z1 + 21], '缺水指示', '红灯 · 水箱需加水', ['paddle']);
-  anchor(pt, [100, KY + 18, HB.z1 + 46], '蒸汽旋钮', '右侧 · 控制蒸汽棒', ['wand']);
-  anchor(pt, [-100, KY + 18, HB.z1 + 46], '热水旋钮', '左侧 · 控制热水嘴', ['wand']);
+  anchor(pt, [24, PY + 26, Z0 + 40], '冲煮拨杆', '油门式拨杆 · 待机回正，向右扳开始萃取', ['paddle', 'group']);
+  anchor(pt, [-58, PY + 8, Z0 + 23], '缺水指示', '水滴图标 · 水箱需加水时亮', ['paddle']);
+  anchor(pt, [58, PY + 8, Z0 + 23], '电源 / 加热', '电源图标 · 锅炉加热时亮', ['paddle']);
+  anchor(pt, [107, KY + 20, HB.z1 + 41], '蒸汽旋钮', '右侧 · 顺时针拧开', ['wand']);
+  anchor(pt, [-107, KY + 20, HB.z1 + 41], '热水旋钮', '左侧 · 顺时针拧开', ['wand']);
   anchor(pt, [-HB.x, HB.y1, 60], '机头', '前面板 + 冲煮头罩 · 随皮肤换色', ['shell']);
 }
 
@@ -672,51 +735,79 @@ let steamWater, element, steamShell, coilCurve;
 /* ---------------------------------------------------------------- coffee group: machined boiler L.1.015 (0.23 L, 500 W) straight on the group, 3-way valve */
 let groupShell, cartridge;
 {
-  const bay = lathe([[0, 186], [26, 186], [26, 188.5], [40, 188.5], [42, 197], [44, 200], [0, 200]], MAT.steel, 0, GZ);   // bayonet ring A.3.011
-  const screen = cylY(26, 185.6, 186.4, 0, GZ, MAT.steelDark, 40);
-  const lugs = [-1, 1].map(s => boxMM(s * 42 - 5, s * 42 + 5, 189, 196, GZ - 7, GZ + 7, MAT.steel, 1));
-  groupShell = cylY(45, 200, 300, 0, GZ, MAT.steel, 48);
+  const bay = lathe([[0, 201], [26, 201], [26, 203.5], [40, 203.5], [42, 212], [44, 215], [0, 215]], MAT.steel, 0, GZ);   // bayonet ring A.3.011
+  const screen = cylY(26, 200.6, 201.4, 0, GZ, MAT.steelDark, 40);
+  const lugs = [-1, 1].map(s => boxMM(s * 42 - 5, s * 42 + 5, 204, 211, GZ - 7, GZ + 7, MAT.steel, 1));
+  groupShell = cylY(45, 215, 300, 0, GZ, MAT.steel, 48);
   const cap = cylY(28, 300, 306, 0, GZ, MAT.steelDark, 32);            // coffee boiler cap A.5.176
-  cartridge = cylY(6, 208, 296, 18, GZ, MAT.element.clone(), 16); cartridge.userData.inner = true;   // 500 W element E.6.047
+  cartridge = cylY(6, 223, 296, 18, GZ, MAT.element.clone(), 16); cartridge.userData.inner = true;   // 500 W element E.6.047
   const ntc = cylBetween([30, 284, GZ - 30], [40, 292, GZ - 40], 3, MAT.steelDark, 12);
   const sol = [boxMM(-78, -50, 225, 253, GZ - 14, GZ + 14, MAT.brass, 3), cylY(12, 253, 281, -64, GZ, MAT.plastic, 24)];   // 3-way solenoid B.4.007
   groupShell.userData.heat = 'coffee'; cap.userData.heat = 'coffee'; cartridge.userData.heat = 'element';
   const p = unit('group', [bay, screen, ...lugs, groupShell, cap, cartridge, ntc, ...sol], {path: [[0, 0, 300]], delay: 0.5, glass: [groupShell], rel: ['group', 'paddle']});
   anchor(p, [45, 270, GZ], '咖啡锅炉', '0.23 L · 500 W · 直接压在冲煮头上', ['group', 'all']);
-  anchor(p, [0, 188, GZ + 42], '冲煮头', '卡口环 + 分水网', ['group']);
+  anchor(p, [0, 203, GZ + 42], '冲煮头', '卡口环 + 分水网', ['group']);
   anchor(p, [-64, 281, GZ], '三通电磁阀', '关阀时把余压排进接水盘', ['group', 'paddle']);
 }
 
-/* ---------------------------------------------------------------- portafilter A.7.027: handle points forward and a little right, as in photos 3 and 4 */
+/* ---------------------------------------------------------------- portafilter A.7.027: basket ring with two ears, a chrome neck with a flared collar,
+   and a contoured grip that swells in the middle, pinches and ends in a slight bulb (the reference handle photo) */
+function woodTexture() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 512;
+  const g = c.getContext('2d');
+  g.fillStyle = '#7a4a2b'; g.fillRect(0, 0, 256, 512);
+  let s = 11; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 180; i++) {                     // fine grain running along the handle
+    const x0 = rnd() * 256, w = 0.4 + rnd() * 1.2, dark = rnd() < 0.65;
+    g.strokeStyle = dark ? `rgba(62,34,18,${0.12 + rnd() * 0.25})` : `rgba(176,120,76,${0.1 + rnd() * 0.2})`;
+    g.lineWidth = w; g.beginPath(); g.moveTo(x0, 0);
+    for (let y = 0; y <= 512; y += 16) g.lineTo(x0 + Math.sin(y / 120 + i * 0.3) * 4, y);
+    g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+const HANDLES = {
+  black: {name: '黑色', mat: {color: 0x17181a, map: null, roughness: 0.72, metalness: 0}},
+  wood: {name: '胡桃木', mat: {color: 0xffffff, map: woodTexture(), roughness: 0.5, metalness: 0}},
+};
+let handleMesh;
 {
-  const ring = lathe([[0, 164], [29, 164], [35, 167], [37, 186], [29.5, 186], [28.5, 172], [0, 172]], MAT.steel, 0, GZ);
-  const puck = cylY(28, 181, 184.5, 0, GZ, std(0x2b1a10, 0, .9), 40);
-  const ears = [-1, 1].map(s => boxMM(s * 39 - 4, s * 39 + 4, 176, 184, GZ - 7, GZ + 7, MAT.steel, 1));
-  const spout = boxMM(-16, 16, 154, 165, GZ - 12, GZ + 12, MAT.steel, 5);
-  const noz = [-9, 9].map(x => cylY(3.4, 144, 155, x, GZ, MAT.steel, 14));
-  const dir = new THREE.Vector3(0.28, -0.13, 0.95).normalize();
-  const A = new THREE.Vector3(0, 176, GZ).addScaledVector(dir, 36), B = A.clone().addScaledVector(dir, 22), C = A.clone().addScaledVector(dir, 128);
-  const neck = cylBetween(A.toArray(), B.toArray(), 9, MAT.steel);
-  const handle = cylBetween(B.toArray(), C.toArray(), 13, MAT.plastic, 24, 11);
-  const end = new THREE.Mesh(new THREE.SphereGeometry(13, 20, 12), MAT.plastic); end.position.copy(C);
-  const p = unit('pf', [ring, puck, ...ears, spout, ...noz, neck, handle, end], {path: [[0, 0, 400]], delay: 0});
-  anchor(p, C.toArray(), '手柄', '58 mm · 双出液嘴，可换无底', ['pf', 'all']);
+  const ring = lathe([[0, 179], [29, 179], [35, 182], [37, 201], [29.5, 201], [28.5, 187], [0, 187]], MAT.steel, 0, GZ);
+  const puck = cylY(28, 196, 199.5, 0, GZ, std(0x2b1a10, 0, .9), 40);
+  const ears = [-1, 1].map(s => boxMM(s * 39 - 4, s * 39 + 4, 191, 199, GZ - 7, GZ + 7, MAT.steel, 1));
+  // double spout: a rounded body under the basket and two nozzles that splay apart
+  const spoutBody = lathe([[0, 168], [12, 168], [15, 172], [15, 180], [0, 180]], MAT.steel, 0, GZ, 32);
+  const noz = [-1, 1].map(s => cylBetween([s * 5, 170, GZ], [s * 11, 157, GZ], 3.4, MAT.steel, 14));
+  const dir = new THREE.Vector3(0.04, -0.3, 0.95).normalize();
+  const orient = (m, at) => { m.quaternion.setFromUnitVectors(UP, dir); m.position.copy(at); return m; };
+  const A = new THREE.Vector3(0, 191, GZ).addScaledVector(dir, 36);
+  // chrome neck with the flared collar
+  const neck = orient(new THREE.Mesh(new THREE.LatheGeometry([[0, 0], [8, 0], [8, 8], [9.5, 12], [12, 20], [12, 25], [10.5, 27], [0, 27]].map(([r, y]) => new THREE.Vector2(r, y)), 40), MAT.steel), A);
+  const B = A.clone().addScaledVector(dir, 27);
+  // contoured grip: radius along its 112 mm length
+  const prof = [[0, 0], [10.5, 0], [12, 4], [14, 18], [15.2, 34], [15, 48], [13.6, 64], [12.8, 78], [13.6, 92], [14.2, 102], [12.8, 109], [8, 112.5], [0, 113.5]];
+  handleMesh = orient(new THREE.Mesh(new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 48), std(0x17181a, 0, 0.72)), B);
+  handleMesh.userData.skin = 'handle';
+  const C = B.clone().addScaledVector(dir, 113);
+  const p = unit('pf', [ring, puck, ...ears, spoutBody, ...noz, neck, handleMesh], {path: [[0, 0, 400]], delay: 0});
+  anchor(p, C.toArray(), '手柄', '58 mm · 人体工学握把 · 可换木柄', ['pf', 'all']);
 }
 
-/* ---------------------------------------------------------------- steam wand T.2.139: swan neck under the right of the head; hot water wand A.5.171 on the left */
+/* ---------------------------------------------------------------- steam wand T.2.139: drops from the head, swings out to the right, then falls straight to the tray edge;
+   hot water wand A.5.171 is the short spout on the left */
 let steamTip;
 {
-  const wand = tube([[118, HB.y0, 96], [120, 172, 100], [126, 140, 126], [125, 116, 156], [122, 102, 167]], 5.5, MAT.steel);
+  const wand = tube([[118, HB.y0, 96], [119, 198, 98], [127, 180, 106], [136, 164, 118], [138, 146, 124], [138, 112, 126]], 5.5, MAT.steel);
   const joint = cylY(8, HB.y0 - 6, HB.y0, 118, 96, MAT.steel, 20);
-  const tip = cylBetween([122, 104, 167], [122, 90, 169], 6, MAT.steelDark, 16);
-  steamTip = new THREE.Vector3(122, 90, 169);
+  const tip = cylBetween([138, 114, 126], [138, 96, 126], 5.8, MAT.steelDark, 16);
+  steamTip = new THREE.Vector3(138, 96, 126);
   const pw = unit('wand', [wand, joint, tip], {path: [[0, 0, 220], [200, 0, 0]], delay: 0.25});
   pw.isSteam = true;
-  anchor(pw, [126, 140, 126], '蒸汽棒', '天鹅颈 · 蒸汽嘴 Ø1.1 mm', ['wand', 'all']);
-  const spout = tube([[-112, HB.y0, 98], [-112, 186, 99], [-112, 178, 100]], 4.6, MAT.steel);
-  const diff = cylBetween([-112, 180, 100], [-112, 169, 101], 6.5, MAT.steelDark, 16);
+  anchor(pw, [138, 140, 124], '蒸汽棒', '外弯后直落 · 蒸汽嘴 Ø1.1 mm', ['wand', 'all']);
+  const spout = tube([[-112, HB.y0, 98], [-112, 203, 99], [-112, 195, 100]], 4.6, MAT.steel);
+  const diff = cylBetween([-112, 197, 100], [-112, 186, 101], 6.5, MAT.steelDark, 16);
   const ph = unit('wand', [spout, diff], {path: [[0, 0, 220], [-200, 0, 0]], delay: 0.25});
-  anchor(ph, [-112, 169, 101], '热水嘴', '取自蒸汽锅炉 · Ø2 mm 节流', ['wand']);
+  anchor(ph, [-112, 186, 101], '热水嘴', '取自蒸汽锅炉 · Ø2 mm 节流', ['wand']);
 }
 
 /* ---------------------------------------------------------------- rotary vane pump E.3.031 (85 L/h) on a 100 W motor; the motor's axis runs left to right */
@@ -810,7 +901,7 @@ function applySkin(id) {
   const k = SKINS.find(s => s.id === id) || SKINS[0];
   skinId = k.id;
   for (const m of meshes) {
-    const kind = m.userData.skin; if (!kind) continue;
+    const kind = m.userData.skin; if (!kind || kind === 'handle') continue;
     const [c, mt, r] = kind === 'tray' ? k.tray : k.body;
     m.userData.sm.color.setHex(c); m.userData.sm.metalness = mt; m.userData.sm.roughness = r;
   }
@@ -821,6 +912,18 @@ function applySkin(id) {
   try { localStorage.setItem('micra-skin', k.id); } catch (e) {}
 }
 applySkin(skinId);
+const handleBox = document.createElement('span'); handleBox.className = 'hsw';
+handleBox.innerHTML = '<span class="lbl2">手柄</span>' + Object.entries(HANDLES).map(([id, H]) => `<button type="button" class="sw" data-handle="${id}"><i style="background:${id === 'wood' ? 'linear-gradient(90deg,#6b3f22,#9a6238,#6b3f22)' : '#17181a'}"></i>${H.name}</button>`).join('');
+skinBox.appendChild(handleBox);
+function applyHandle(id) {
+  const H = HANDLES[id] ? HANDLES[id] : HANDLES.black, sm = handleMesh.userData.sm;
+  sm.color.setHex(H.mat.color); sm.map = H.mat.map; sm.roughness = H.mat.roughness; sm.needsUpdate = true;
+  document.querySelectorAll('[data-handle]').forEach(b => b.classList.toggle('on', HANDLES[b.dataset.handle] === H));
+  try { localStorage.setItem('micra-handle', id); } catch (e) {}
+}
+let handleId = 'black';
+try { const h = localStorage.getItem('micra-handle'); if (HANDLES[h]) handleId = h; } catch (e) {}
+applyHandle(handleId);
 
 /* ================================================================ x-ray look (the La Marzocco cutaway): glass bodies, dark outlines, heat in red */
 const BG_SOLID = new THREE.Color(0xe8e9ec), BG_XRAY = new THREE.Color(0xf6f6f4);
@@ -942,6 +1045,7 @@ document.querySelectorAll('[data-sub]').forEach(b => b.addEventListener('click',
   takeOver(clock); setIso(b.dataset.sub); const v = SUBVIEW[b.dataset.sub]; if (v && S.Etgt === 0) goView(v, clock);
 }));
 document.querySelectorAll('[data-skin]').forEach(b => b.addEventListener('click', () => { takeOver(clock); applySkin(b.dataset.skin); }));
+document.querySelectorAll('[data-handle]').forEach(b => b.addEventListener('click', () => { takeOver(clock); applyHandle(b.dataset.handle); }));
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => { takeOver(clock); goView(b.dataset.view, clock); }));
 document.getElementById('btn-xray').addEventListener('click', () => { takeOver(clock); setXray(!S.xray); if (S.Etgt === 0) goView(S.xray ? 'xside' : 'hero', clock); });
 document.getElementById('btn-explode').addEventListener('click', () => { takeOver(clock); setExplode(S.Etgt === 0); goView(S.Etgt ? 'exploded' : 'hero', clock); });
@@ -1192,11 +1296,13 @@ function frame(nowMs) {
   paddle.rotation.y = ease(m.paddle) * 0.6;   // rests centred, swings right to brew
   paddle.children.forEach(c => { if (c.userData.xm) c.userData.xm.color.setHex(m.paddle > 0.5 ? 0xd2381c : 0x2f343a); });
   fan.rotation.x = m.rotor;
+  ICONS.power.userData.sm.emissiveIntensity = (m.steamHeat || m.coffeeHeat) ? 1.3 : 0.35;
+  ICONS.drop.userData.sm.emissiveIntensity = m.tank < 300 ? 1.3 : 0.12;
   KNOBS.steam.g.rotation.z = -ease(m.steamK) * Math.PI / 2;   // clockwise seen from the front
   KNOBS.hot.g.rotation.z = -ease(m.hotK) * Math.PI / 2;
   {
     const P_HOT = parts.find(p => p.sub === 'wand' && !p.isSteam);
-    const top = 169 + P_HOT.obj.position.y, bot = 69 + P_WATER.obj.position.y, len = top - bot;
+    const top = 186 + P_HOT.obj.position.y, bot = 69 + P_WATER.obj.position.y, len = top - bot;
     hotStream.visible = m.hotK > 0.05 && S.E < 0.02 && ['all', 'wand', 'water'].includes(S.iso) && len > 1;
     const r = 1.6 * m.hotK + 0.4;
     hotStream.scale.set(r, len, r); hotStream.position.set(-112, bot + len / 2, 101 + P_HOT.obj.position.z);
@@ -1211,7 +1317,7 @@ function frame(nowMs) {
   cupLiquid.visible = crema.visible = m.yield > 0.2 && cupLiquid.userData.op > 0.01;
   cupLiquid.scale.y = Math.max(0.01, h); cupLiquid.position.y = 74 + h / 2; crema.position.y = 74 + h + 0.3;
   for (const s of streams) {
-    const top = 144 + P_PF.obj.position.y, bot = 74 + h + P_WATER.obj.position.y, len = top - bot;
+    const top = 157 + P_PF.obj.position.y, bot = 74 + h + P_WATER.obj.position.y, len = top - bot;
     s.visible = m.yRate > 0.03 && S.E < 0.02 && ['all', 'pf', 'group', 'water', 'paddle'].includes(S.iso) && len > 1;
     const r = 0.7 + Math.sqrt(m.yRate) * 0.85;
     s.scale.set(r, len, r); s.position.y = bot + len / 2;
@@ -1285,7 +1391,7 @@ function frame(nowMs) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__sim = {toggleValve: (k) => toggleValve(k), goView2: (pos, tgt) => { VIEWS.__t = {pos, tgt}; goView('__t', performance.now() / 1000); }, model, S, setIso, setXray, setExplode, goView, applySkin, setPI, togglePaddle, get mtime() { return mtime; }, set mtime(v) { mtime = v; }, takeOver: () => takeOver(clock), parts};
+window.__sim = {applyHandle, toggleValve: (k) => toggleValve(k), goView2: (pos, tgt) => { VIEWS.__t = {pos, tgt}; goView('__t', performance.now() / 1000); }, model, S, setIso, setXray, setExplode, goView, applySkin, setPI, togglePaddle, get mtime() { return mtime; }, set mtime(v) { mtime = v; }, takeOver: () => takeOver(clock), parts};
 </script>
 
 </body>
